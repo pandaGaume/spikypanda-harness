@@ -2,7 +2,7 @@
 
 ## Phase 0: upstream package readiness
 
-- Make `@spiky-panda/nodeeditor` installable from an external repository.
+- Make `@spikypanda/nodeeditor` installable from an external repository.
 - Stabilize the public plugin, registry, serialization and GraphRunner APIs.
 - Consider extracting the DOM-free contracts into `@spiky-panda/plugin-sdk`.
 - Validate an external asynchronous plugin against installed packages.
@@ -54,4 +54,3 @@
 - Ten thousand historical successes do not prevent bounded adaptation.
 - Policy snapshots round-trip without losing plasticity.
 - The visual plugin loads without coupling the headless runtime to the editor.
-

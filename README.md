@@ -18,7 +18,7 @@ The project separates three graphs:
    and experiences.
 
 The harness runtime is headless and depends only on `@spiky-panda/core`. The
-visual plugin depends on `@spiky-panda/nodeeditor` and registers authoring
+visual plugin depends on `@spikypanda/nodeeditor` and registers authoring
 nodes for the existing SpikyPanda plugin loader.
 
 ## Workspace packages
@@ -29,7 +29,7 @@ nodes for the existing SpikyPanda plugin loader.
 
 ## Current dependency status
 
-`@spiky-panda/core` and `@spiky-panda/nodeeditor` are peer dependencies. During
+`@spiky-panda/core` and `@spikypanda/nodeeditor` are peer dependencies. During
 local development they can be linked from a SpikyPanda checkout. The Node
 Editor package is currently private in the upstream repository, so publishing
 it or extracting a public plugin SDK is an upstream prerequisite for a clean

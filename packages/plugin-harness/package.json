@@ -14,13 +14,12 @@
   "peerDependencies": {
     "@spiky-panda/core": "^1.0.0",
     "@spiky-panda/harness": "^0.1.0",
-    "@spiky-panda/nodeeditor": "^0.1.0"
+    "@spikypanda/nodeeditor": "^0.1.0"
   },
   "peerDependenciesMeta": {
-    "@spiky-panda/nodeeditor": {
+    "@spikypanda/nodeeditor": {
       "optional": true
     }
   },
   "license": "MIT"
 }
-
