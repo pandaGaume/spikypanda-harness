@@ -16,9 +16,13 @@
     "test": "npm run build && node --import ./scripts/register-spikypanda-loader.mjs --test tests/*.test.mjs",
     "experiment:counter": "npm run build && node --import ./scripts/register-spikypanda-loader.mjs examples/counter/run.mjs",
     "experiment:helios": "npm run build && node --import ./scripts/register-spikypanda-loader.mjs examples/helios/run.mjs",
-    "link:spikypanda": "node scripts/link-spikypanda.mjs"
+    "link:spikypanda": "node scripts/link-spikypanda.mjs",
+    "build:demo": "npm run build && node scripts/build-browser.mjs",
+    "test:bundle": "npm run build:demo && node --import ./scripts/register-spikypanda-loader.mjs --test tests/bundle.smoke.mjs",
+    "demo": "npm run build:demo && node scripts/serve-demo.mjs"
   },
   "devDependencies": {
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "esbuild": "^0.25.0"
   }
 }

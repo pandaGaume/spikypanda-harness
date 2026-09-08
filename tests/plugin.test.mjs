@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import plugin from "../packages/plugin-harness/dist/index.js";
+import plugin, { HARNESS_NODES } from "../packages/plugin-harness/dist/index.js";
 
 test("visual plugin registers the expected harness nodes", () => {
     const registered = [];
@@ -16,15 +16,8 @@ test("visual plugin registers the expected harness nodes", () => {
         subPlugin.activate({ ...context, id });
     }
     assert.deepEqual(
-        registered.map((item) => item.type),
-        [
-            "Harness.Policy:lookup",
-            "Harness.Policy:confidence-gate",
-            "Harness.Reasoning:provider",
-            "Harness.Safety:guard",
-            "Harness.Execution:capability",
-            "Harness.Learning:record",
-        ]
+        registered.map((item) => item.type).sort(),
+        HARNESS_NODES.map(item => item.type).sort()
     );
     assert.ok(registered.every((item) => item.meta.category.startsWith("Harness.")));
 });

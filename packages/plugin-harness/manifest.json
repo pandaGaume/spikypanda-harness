@@ -9,6 +9,7 @@
   "nodes": [],
   "editors": [],
   "subPlugins": [
+    { "id": "Harness.Observation", "displayName": "Observation", "category": "Harness.Observation" },
     { "id": "Harness.Policy", "displayName": "Policy", "category": "Harness.Policy" },
     { "id": "Harness.Reasoning", "displayName": "Reasoning", "category": "Harness.Reasoning" },
     { "id": "Harness.Safety", "displayName": "Safety", "category": "Harness.Safety" },

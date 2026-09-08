@@ -28,6 +28,18 @@ export const DEFAULT_PLASTICITY_CONFIG: PlasticityConfig = Object.freeze({
     scoreThreshold: 0.55,
 });
 
+export function validatePlasticityConfig(config: PlasticityConfig): void {
+    for (const key of Object.keys(DEFAULT_PLASTICITY_CONFIG) as (keyof PlasticityConfig)[]) {
+        if (!Number.isFinite(config[key])) throw new Error(`Invalid plasticity parameter: ${key}`);
+    }
+    if (config.rewardAlpha <= 0 || config.rewardAlpha > 1 || config.confidenceAlpha <= 0 || config.confidenceAlpha > 1 ||
+        config.initialConfidence < 0 || config.initialConfidence > 1 || config.minimumEvidence < 1 ||
+        config.maximumEffectiveEvidence < config.minimumEvidence || config.maximumConsecutiveFailures < 1 ||
+        config.promotionConfidence > 1 || config.demotionConfidence < 0 || config.promotionConfidence <= config.demotionConfidence ||
+        config.promotionReward > 1 || config.demotionReward < -1 || config.promotionReward <= config.demotionReward ||
+        config.scoreThreshold < 0 || config.scoreThreshold > 1) throw new Error("Invalid plasticity bounds or hysteresis");
+}
+
 export function initialTransitionStats(config: PlasticityConfig = DEFAULT_PLASTICITY_CONFIG): TransitionStats {
     return {
         totalUsageCount: 0,

@@ -79,6 +79,7 @@ export interface OutcomeEvaluation {
 
 export interface Experience {
     readonly id: string;
+    readonly decisionId?: string;
     readonly context: DecisionContext;
     readonly decision: ResolvedDecision;
     readonly stateAfter: State;
@@ -113,6 +114,8 @@ export interface PolicyCandidate {
 }
 
 export interface PolicyFallbackInput {
+    readonly decisionId?: string;
+    readonly signal?: AbortSignal;
     readonly state: State;
     readonly intention: Intention;
     readonly allowedCapabilities: ReadonlyArray<CapabilityDescriptor>;

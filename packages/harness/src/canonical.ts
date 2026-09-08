@@ -15,7 +15,7 @@ export function stableStringify(value: JsonValue | ReadonlyArray<JsonValue>): st
 }
 
 export function contextKey(state: State, intention: Intention): string {
-    return stableStringify([state.id, intention.id]);
+    return stableStringify(intention.parameters ? [state.id, intention.id, intention.parameters] : [state.id, intention.id]);
 }
 
 export function createDecisionContext(state: State, intention: Intention): DecisionContext {

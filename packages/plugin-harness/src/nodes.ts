@@ -1,123 +1,70 @@
-import { RuntimeNode, type IDeclaresPorts, type IPortDescriptor, type ISession } from "@spiky-panda/core";
-import type {
-    CapabilityRegistry,
-    DecisionContext,
-    PolicyCandidate,
-    PolicyDecision,
-    PolicyFallback,
-    PolicyFallbackInput,
-    PolicyGraph,
-    SafetyGuard,
-} from "@spiky-panda/harness";
+import { RuntimeNode, type IPortDescriptor, type ISession } from "@spiky-panda/core";
+import type { AdaptivePolicyRuntime, DecisionFrame, HarnessStage } from "@spiky-panda/harness";
 
 export interface HarnessNodeServices {
-    readonly policy?: PolicyGraph;
-    readonly fallback?: PolicyFallback;
-    readonly safetyGuard?: SafetyGuard;
-    readonly capabilities?: CapabilityRegistry;
+    readonly runtime: AdaptivePolicyRuntime;
+    readonly frame: DecisionFrame;
+    readonly onNode?: (id: string, stage: HarnessStage) => void;
 }
 
-abstract class HarnessNode extends RuntimeNode<HarnessNodeServices> implements IDeclaresPorts {
-    public abstract readonly inputPorts: ReadonlyArray<IPortDescriptor>;
-    public abstract readonly outputPorts: ReadonlyArray<IPortDescriptor>;
-}
+const port = (slot: string, type: string): IPortDescriptor => ({ slot, type: `harness.${type}`, optional: false });
 
-export class PolicyLookupNode extends HarnessNode {
-    public readonly inputPorts = [
-        { slot: "state", optional: false, type: "harness.state" },
-        { slot: "intention", optional: false, type: "harness.intention" },
-    ] as const;
-    public readonly outputPorts = [{ slot: "candidates", optional: false, type: "harness.candidates" }] as const;
+export class HarnessNode extends RuntimeNode<HarnessNodeServices> {
+    public constructor(public readonly stage: HarnessStage, public readonly inputPorts: ReadonlyArray<IPortDescriptor>, public readonly outputPorts: ReadonlyArray<IPortDescriptor>) { super(); }
 
-    public override fire(session: ISession): void {
-        const state = this.consumeLatest(session, "state") as Parameters<PolicyGraph["findCandidateActions"]>[0] | undefined;
-        const intention = this.consumeLatest(session, "intention") as Parameters<PolicyGraph["findCandidateActions"]>[1] | undefined;
-        if (!state || !intention || !this.bag?.policy) return;
-        this.publishAll(session, "candidates", this.bag.policy.findCandidateActions(state, intention));
+    public override isReady(session: ISession): boolean {
+        if (this.stage === "observe") return true;
+        if (this.stage === "merge") return session.graph.links.some((link, index) => link.ofin === this && session.linkStates[index].ready);
+        return super.isReady(session);
     }
-}
 
-export class ConfidenceGateNode extends HarnessNode {
-    public readonly inputPorts = [{ slot: "candidates", optional: false, type: "harness.candidates" }] as const;
-    public readonly outputPorts = [
-        { slot: "decision", optional: true, type: "harness.decision" },
-        { slot: "fallback", optional: true, type: "boolean" },
-    ] as const;
-
-    public override fire(session: ISession): void {
-        const candidates = (this.consumeLatest(session, "candidates") as PolicyCandidate[] | undefined) ?? [];
-        const candidate = candidates.find((item) => item.eligible);
-        if (candidate) {
-            const decision: PolicyDecision = {
-                action: candidate.action,
-                invocation: candidate.invocation,
-                expectedOutcome: candidate.expectedOutcome,
-            };
-            this.publishAll(session, "decision", decision);
-        } else {
-            this.publishAll(session, "fallback", true);
-        }
-    }
-}
-
-export class ReasoningProviderNode extends HarnessNode {
-    public readonly inputPorts = [{ slot: "request", optional: false, type: "harness.fallback-input" }] as const;
-    public readonly outputPorts = [{ slot: "decision", optional: false, type: "harness.decision" }] as const;
+    public override fire(): void { throw new Error("Harness nodes require the asynchronous harness driver"); }
 
     public override async fireAsync(session: ISession): Promise<void> {
-        const request = this.consumeLatest(session, "request") as PolicyFallbackInput | undefined;
-        if (!request || !this.bag?.fallback) return;
-        this.publishAll(session, "decision", await this.bag.fallback.resolve(request));
+        const services = this.bag;
+        if (!services) throw new Error("Harness runtime services must be rebound before execution");
+        const packets = this.inputPorts.map(p => this.consumeLatest(session, p.slot)).filter(p => p !== undefined);
+        if (this.stage !== "observe" && (packets.length !== 1 || packets[0] !== services.frame)) throw new Error("Missing, duplicated or foreign decision frame");
+        await services.runtime.runStage(this.stage, services.frame);
+        try { services.onNode?.(String(this.id), this.stage); } catch { /* UI diagnostics are best effort. */ }
+        if (!this.outputPorts.length) return;
+        const slot = this.stage === "gate" ? services.runtime.selectedSource(services.frame) : this.outputPorts[0].slot;
+        this.publishAll(session, slot, services.frame);
     }
 }
 
-export class SafetyGuardNode extends HarnessNode {
-    public readonly inputPorts = [
-        { slot: "decision", optional: false, type: "harness.decision" },
-        { slot: "context", optional: false, type: "harness.context" },
-    ] as const;
-    public readonly outputPorts = [
-        { slot: "authorized", optional: true, type: "harness.decision" },
-        { slot: "rejected", optional: true, type: "harness.safety-decision" },
-    ] as const;
+export class StateObserverNode extends HarnessNode { constructor() { super("observe", [], [port("state", "state")]); } }
+export class DecisionContextNode extends HarnessNode { constructor() { super("context", [port("state", "state")], [port("context", "context")]); } }
+export class PolicyLookupNode extends HarnessNode { constructor() { super("lookup", [port("context", "context")], [port("candidates", "candidates")]); } }
+export class ConfidenceGateNode extends HarnessNode { constructor() { super("gate", [port("candidates", "candidates")], [port("policy", "decision"), port("fallback", "uncertain")]); } }
+export class FallbackRequestNode extends HarnessNode { constructor() { super("request", [port("fallback", "uncertain")], [port("request", "request")]); } }
+export class ReasoningProviderNode extends HarnessNode { constructor() { super("reason", [port("request", "request")], [port("decision", "decision")]); } }
+export class DecisionMergeNode extends HarnessNode { constructor() { super("merge", [port("policy", "decision"), port("reasoning", "decision")], [port("decision", "merged")]); } }
+export class SafetyGuardNode extends HarnessNode { constructor() { super("guard", [port("decision", "merged")], [port("authorized", "authorized")]); } }
+export class CapabilityExecutorNode extends HarnessNode { constructor() { super("execute", [port("authorized", "authorized")], [port("result", "result")]); } }
+export class OutcomeObserverNode extends HarnessNode { constructor() { super("observe-after", [port("result", "result")], [port("outcome", "outcome")]); } }
+export class OutcomeEvaluatorNode extends HarnessNode { constructor() { super("evaluate", [port("outcome", "outcome")], [port("experience", "experience")]); } }
+export class ExperienceRecorderNode extends HarnessNode { constructor() { super("record", [port("experience", "experience")], []); } }
 
-    public override async fireAsync(session: ISession): Promise<void> {
-        const decision = this.consumeLatest(session, "decision") as PolicyDecision | undefined;
-        const context = this.consumeLatest(session, "context") as DecisionContext | undefined;
-        if (!decision || !context || !this.bag?.safetyGuard) return;
-        const result = await this.bag.safetyGuard.validate(decision, context);
-        this.publishAll(session, result.allowed ? "authorized" : "rejected", result.allowed ? decision : result);
-    }
+export const HARNESS_NODES = [
+    { type: "Harness.Observation:state", label: "Observer", ctor: StateObserverNode },
+    { type: "Harness.Policy:context", label: "Contexte + intention", ctor: DecisionContextNode },
+    { type: "Harness.Policy:lookup", label: "Chercher une policy", ctor: PolicyLookupNode },
+    { type: "Harness.Policy:confidence-gate", label: "Confiance suffisante ?", ctor: ConfidenceGateNode },
+    { type: "Harness.Reasoning:request", label: "Construire la demande", ctor: FallbackRequestNode },
+    { type: "Harness.Reasoning:provider", label: "Raisonneur (mock)", ctor: ReasoningProviderNode },
+    { type: "Harness.Policy:merge", label: "Fusion des branches", ctor: DecisionMergeNode },
+    { type: "Harness.Safety:guard", label: "Valider + autoriser", ctor: SafetyGuardNode },
+    { type: "Harness.Execution:capability", label: "Executer la capacite", ctor: CapabilityExecutorNode },
+    { type: "Harness.Observation:outcome", label: "Observer le resultat", ctor: OutcomeObserverNode },
+    { type: "Harness.Learning:evaluate", label: "Evaluer le progres", ctor: OutcomeEvaluatorNode },
+    { type: "Harness.Learning:record", label: "Apprendre", ctor: ExperienceRecorderNode },
+] as const;
+
+export function createHarnessNode(type: string): HarnessNode {
+    const entry = HARNESS_NODES.find(n => n.type === type);
+    if (!entry) throw new Error(`Unknown harness node type: ${type}`);
+    const node = new entry.ctor();
+    node.type = type;
+    return node;
 }
-
-export class CapabilityExecutorNode extends HarnessNode {
-    public readonly inputPorts = [
-        { slot: "decision", optional: false, type: "harness.decision" },
-        { slot: "context", optional: false, type: "harness.context" },
-    ] as const;
-    public readonly outputPorts = [{ slot: "result", optional: false, type: "harness.capability-result" }] as const;
-
-    public override async fireAsync(session: ISession): Promise<void> {
-        const decision = this.consumeLatest(session, "decision") as PolicyDecision | undefined;
-        const context = this.consumeLatest(session, "context") as DecisionContext | undefined;
-        if (!decision || !context || !this.bag?.capabilities) return;
-        const result = await this.bag.capabilities.execute(decision, {
-            decisionId: `graph-${Date.now()}`,
-            state: context.state,
-            intention: context.intention,
-        });
-        this.publishAll(session, "result", result);
-    }
-}
-
-export class ExperienceRecorderNode extends HarnessNode {
-    public readonly inputPorts = [{ slot: "experience", optional: false, type: "harness.experience-input" }] as const;
-    public readonly outputPorts = [{ slot: "recorded", optional: false, type: "harness.experience" }] as const;
-
-    public override fire(session: ISession): void {
-        const input = this.consumeLatest(session, "experience") as Parameters<PolicyGraph["recordExperience"]>[0] | undefined;
-        if (!input || !this.bag?.policy) return;
-        this.publishAll(session, "recorded", this.bag.policy.recordExperience(input));
-    }
-}
-

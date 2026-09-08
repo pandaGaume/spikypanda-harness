@@ -6,4 +6,5 @@ export * from "./policy-graph.js";
 export * from "./capability.js";
 export * from "./metrics.js";
 export * from "./runtime.js";
+export * from "./validation.js";
 

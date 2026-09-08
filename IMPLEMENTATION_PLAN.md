@@ -1,5 +1,30 @@
 # Implementation plan
 
+## Point de référence avant V2
+
+Voir l'[état des lieux V1](docs/ETAT_DES_LIEUX_V1.md) pour distinguer les
+réalisations vérifiées des travaux restants. Ce document fait référence pour
+le jalon du 8 septembre 2026 ; les phases ci-dessous restent une feuille de
+route et ne constituent pas une liste de fonctionnalités toutes livrées.
+
+La prochaine évolution proposée concerne les contextes de fonctionnement
+appris et la séparation entre fiabilité d'une branche et applicabilité
+actuelle. Elle n'est pas implémentée. Les acquis V1 portent sur le pipeline
+exécutable, les contrôles, la plasticité des scores et leur observation.
+La preuve de résilience HELIOS et les adaptateurs LLM restent à réaliser.
+
+## Delivered milestone: executable visual Counter
+
+The headless and visual paths now share a guarded 12-stage pipeline. The local
+editor demo loads the external plugin bundle, executes its visible graph, shows
+traces and evolving policy eligibility, reverses the world dynamics, and saves
+the harness and policy separately. JSON validation, fresh approval, stale-state
+rejection, timeout/cancellation and session identity are covered by tests.
+
+Scope remains deliberately limited to a single acyclic decision graph. A real
+LLM adapter, general workflows, production authorization and continuous HELIOS
+resilience experiments remain future work. See `docs/VALIDATION.md`.
+
 ## Phase 0: upstream package readiness
 
 - Make `@spikypanda/nodeeditor` installable from an external repository.

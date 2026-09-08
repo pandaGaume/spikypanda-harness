@@ -5,7 +5,7 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist", "manifest.json"],
+  "files": ["dist", "bundle", "manifest.json"],
   "sideEffects": false,
   "scripts": {
     "build": "tsc -b",
