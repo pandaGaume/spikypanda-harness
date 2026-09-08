@@ -1,0 +1,20 @@
+{
+  "$schema": "https://spikypanda.dev/schemas/plugin.v1.json",
+  "id": "spk.harness",
+  "version": "0.1.0",
+  "displayName": "Harness",
+  "description": "Inspectable adaptive decision harness nodes",
+  "category": "Harness",
+  "entry": "bundle/SpkPluginHarness.js",
+  "nodes": [],
+  "editors": [],
+  "subPlugins": [
+    { "id": "Harness.Policy", "displayName": "Policy", "category": "Harness.Policy" },
+    { "id": "Harness.Reasoning", "displayName": "Reasoning", "category": "Harness.Reasoning" },
+    { "id": "Harness.Safety", "displayName": "Safety", "category": "Harness.Safety" },
+    { "id": "Harness.Execution", "displayName": "Execution", "category": "Harness.Execution" },
+    { "id": "Harness.Learning", "displayName": "Learning", "category": "Harness.Learning" }
+  ],
+  "manifestRefs": []
+}
+

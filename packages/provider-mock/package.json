@@ -1,0 +1,25 @@
+{
+  "name": "@spiky-panda/harness-provider-mock",
+  "version": "0.1.0",
+  "description": "Deterministic reasoning provider for SpikyPanda Harness",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "tsc -b --clean"
+  },
+  "peerDependencies": {
+    "@spiky-panda/harness": "^0.1.0"
+  },
+  "license": "MIT"
+}
+

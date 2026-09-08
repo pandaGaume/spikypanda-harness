@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2020",
+    "moduleResolution": "node",
+    "lib": ["ES2022", "DOM"],
+    "strict": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@spiky-panda/harness": ["packages/harness/src/index.ts"],
+      "@spiky-panda/harness/*": ["packages/harness/src/*"],
+      "@spiky-panda/harness-provider-mock": ["packages/provider-mock/src/index.ts"]
+    }
+  }
+}

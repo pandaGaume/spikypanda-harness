@@ -1,0 +1,26 @@
+{
+  "name": "@spiky-panda/plugin-harness",
+  "version": "0.1.0",
+  "description": "Visual Harness authoring nodes for SpikyPanda Node Editor",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist", "manifest.json"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "tsc -b --clean"
+  },
+  "peerDependencies": {
+    "@spiky-panda/core": "^1.0.0",
+    "@spiky-panda/harness": "^0.1.0",
+    "@spiky-panda/nodeeditor": "^0.1.0"
+  },
+  "peerDependenciesMeta": {
+    "@spiky-panda/nodeeditor": {
+      "optional": true
+    }
+  },
+  "license": "MIT"
+}
+
