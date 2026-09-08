@@ -1,17 +1,20 @@
 import "reflect-metadata";
 import { RuntimeNode, RuntimeGraph, Channel, Session, Scheduler, isLinkRef, Graph, GraphNode, GraphOLink } from "@spiky-panda/core";
 import { GraphViewer, NodeRegistry, LinkRegistry, EditorRegistry, PORT_COLORS, loadPluginFromUrl } from "@spikypanda/nodeeditor";
-import { PolicyGraph } from "../../packages/harness/dist/index.js";
+import * as SpikypandaHarness from "../../packages/harness/dist/index.js";
+import { createCounterHarness } from "../counter/harness.mjs";
 import { CounterWorld, createCounterRuntime } from "../counter/world.mjs";
 import { projectMemory } from "./memory-model.mjs";
 import { MemoryView } from "./memory-view.mjs";
 import "./style.css";
 
 globalThis.SpikypandaCore = { RuntimeNode, RuntimeGraph, Channel, Session, Scheduler, isLinkRef, Graph, GraphNode, GraphOLink };
+globalThis.SpikypandaHarness = SpikypandaHarness;
+const { PolicyGraph } = SpikypandaHarness;
 const registry = new NodeRegistry();
 await loadPluginFromUrl("SpkPluginHarness", "spk.harness", { nodes: registry, links: new LinkRegistry(), editors: new EditorRegistry(),
     url: "./SpkPluginHarness.js", assetUrl: path => new URL(path, location.href).href });
-const { HARNESS_NODES, createCounterHarness, createGraphDriver, parseHarnessDefinition } = globalThis.SpkPluginHarness;
+const { HARNESS_NODES, createGraphDriver, parseHarnessDefinition } = globalThis.SpkPluginHarness;
 for (const entry of HARNESS_NODES) {
     const sample = new entry.ctor();
     if (!(sample instanceof RuntimeNode)) throw new Error("Plugin loaded a different core instance");

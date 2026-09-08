@@ -23,11 +23,14 @@ await build({ ...common, entryPoints: [resolve(root, "examples/editor/app.mjs")]
 await copyFile(resolve(root, "examples/editor/index.html"), resolve(root, "dist/demo/index.html"));
 await build({ ...common, entryPoints: [resolve(root, "packages/plugin-harness/dist/index.js")],
     outfile: resolve(root, "packages/plugin-harness/bundle/SpkPluginHarness.js"), format: "iife", globalName: "SpkPluginHarness",
-    plugins: [{ name: "shared-core", setup(builder) {
+    plugins: [{ name: "shared-runtime", setup(builder) {
+        builder.onResolve({ filter: /^@spiky-panda\/harness$/ }, () => ({ path: "harness", namespace: "harness-host" }));
+        builder.onLoad({ filter: /.*/, namespace: "harness-host" }, () => ({ contents:
+            'if (!globalThis.SpikypandaHarness) throw new Error("Load the shared SpikypandaHarness before its visual plugin"); module.exports = globalThis.SpikypandaHarness;', loader: "js" }));
         builder.onResolve({ filter: /^(@spiky-panda\/core|spikypanda-core)$/ }, () => ({ path: "core", namespace: "host" }));
         builder.onLoad({ filter: /.*/, namespace: "host" }, () => ({ contents:
             'if (!globalThis.SpikypandaCore) throw new Error("Load the shared SpikypandaCore before Harness"); module.exports = globalThis.SpikypandaCore;', loader: "js" }));
     } }],
 });
 await copyFile(resolve(root, "packages/plugin-harness/bundle/SpkPluginHarness.js"), resolve(root, "dist/demo/SpkPluginHarness.js"));
-console.log("Browser demo and external-core plugin bundle ready.");
+console.log("Browser demo and shared-runtime plugin bundle ready.");

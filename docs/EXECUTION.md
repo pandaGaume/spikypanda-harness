@@ -1,9 +1,11 @@
-# Execution contract, visual milestone 01
+# Execution contract, executable nodes after V1
 
 ## Shared pipeline
 
 `AdaptivePolicyRuntime.step(intention, signal?, driver?)` opens a decision session.
-The default driver runs the same stages used by the plugin's RuntimeNodes:
+The host must supply a driver in runtime options or to each step. No scenario
+or default graph is embedded in the library. The headless Counter example and
+its editor compile the same sample topology:
 
 ```text
 observe > context > lookup > gate
@@ -14,18 +16,32 @@ observe > context > lookup > gate
                       > guard > execute > observe-after > evaluate > record
 ```
 
-`createGraphDriver(definition, onNode?)` compiles actual saved nodes and edges to
-core `RuntimeNode`, `Channel`, `RuntimeGraph` and `Session` instances. A small
-Session adapter delivers queued messages during the current core's asynchronous
-topological pass. It uses public core APIs; it does not duplicate a graph engine
-or modify the upstream repository. Delayed links, nested graphs, cycles,
-multiple actions and parallel branches are intentionally outside this version.
+`createGraphDriver(definition, onNode?, factory?)` compiles saved nodes and edges
+using core's `RuntimeGraphBuilder.withNodes`, `withChannel` and `build`.
+`createRuntimeGraphDriver(graph, onNode?)` accepts a host-built core graph
+directly, with the same harness validation and no JSON round trip.
+`HarnessNode` overrides asynchronous execution and delegates business behavior
+to each subclass's protected `execute(input, session)` method. A trusted host
+factory can replace a built-in node with a subclass or insert additional typed
+nodes. Stage strings label diagnostic events; they never dispatch behavior.
 
-Every runtime node passes an opaque `DecisionFrame`. The runtime keeps the
-observation, proposal, results and stage state privately. Rewiring a decision
-straight into an executor cannot manufacture an authorization. Exact stage
-order, one token per selected branch and one session per decision are enforced.
-The merge consumes either the policy branch or the reasoning branch, never both.
+`AdaptivePolicyRuntime` owns decision IDs, deadlines, cancellation and the
+single-run lifecycle. `HarnessSession extends Session` holds the run's services,
+immutable packets, execution authority and final trace. Nodes do not retain
+decision state in their `bag`. The same compiled, stateless graph can serve
+distinct runtimes with separate sessions. Do not mutate its topology during a run.
+
+Each wire carries an opaque, single-use packet whose typed payload belongs to
+the current session. The merge consumes either the policy branch or the reasoning
+branch, never both. Authorization receipts are bound to the exact approved
+decision and its session. A differently wired node cannot manufacture a usable
+receipt by emitting an object with the right port type.
+
+The core owns ordering and dispatch. A small `HarnessSession.publish` adapter
+delivers queued messages during the current core's asynchronous topological
+pass, using its public APIs. This compatibility bridge does not duplicate a
+graph engine or modify upstream. Delayed links, nested graphs, cycles, multiple
+actions and parallel branches remain outside this version.
 
 The provider receives an immutable snapshot of observations, intention,
 available capabilities, candidates and recent failures, plus `decisionId` and
@@ -39,9 +55,15 @@ are rejected. Schemas are compiled once at registration, with strict mode.
 - `approval-required` capabilities need the host registry's `approve` callback,
   called on every invocation, including learned replays.
 - `SafetyGuard` remains a host service, separate from learned confidence.
+- `ExecutionAuthority.authorize` validates the decision and arguments, invokes
+  that guard and issues a session-local receipt for the frozen proposal.
+- `ExecutionAuthority.execute` consumes the receipt and permits at most one
+  dispatch per decision. Overriding a node does not disable these checks.
 - Capabilities recheck availability before execution.
-- After any approval delay, the runtime observes again and compares the full
+- After any approval delay, the authority observes again and compares the full
   observation with the original frozen one. A stale proposal is rejected.
+- The recorder checks the completed execution against the authority's receipt
+  history before learning. A fabricated execution or substituted result is rejected.
 
 Freshness is not the same as policy similarity. Counter deliberately groups
 states into `below`, `above` and `at-target` for learning. Its numeric value and
@@ -80,7 +102,18 @@ transaction guarantee in this milestone.
 
 `HarnessDefinition` version 1 stores typed node IDs, positions, enabled states,
 edges and the intention. It contains neither the policy nor runtime services.
-Incomplete drafts can be saved; execution validates the complete 12-stage graph.
+Incomplete drafts can be saved. Execution validates port types, complete wiring,
+enabled nodes, one observation source, one experience sink and an acyclic graph.
+The default palette still has 12 nodes, but the compiler no longer requires
+exactly that count or a hardcoded predecessor table. All declared ports require
+one wire; the built-in merge is ready with either of its alternative inputs.
+Source and sink extensions must inherit `StateObserverNode` and
+`ExperienceRecorderNode`. This is not an unrestricted workflow engine.
+
+Consolidated V1 documents keep their version, node IDs and port names. Custom
+types require the host to supply their factory on parsing and compilation; JSON
+does not contain executable code. Factories must create fresh nodes and avoid
+side effects, as document validation may also instantiate nodes.
 
 `PolicySnapshot` version 1 stores contexts, actions, capability descriptors,
 transitions, experiences and the plasticity configuration. Older snapshots
@@ -101,12 +134,18 @@ does not implement journal compaction, encrypted storage or concurrent writers.
 ## External plugin loading
 
 `npm run build:demo` creates `packages/plugin-harness/bundle/SpkPluginHarness.js`.
-It expects the host's shared `globalThis.SpikypandaCore` and exports
-`globalThis.SpkPluginHarness`. The demo uses `loadPluginFromUrl`, the real editor
-NodeRegistry and GraphViewer. The bundle smoke test checks `instanceof` against
-the host core. Node Editor remains a locally linked private upstream package.
+The host must expose `globalThis.SpikypandaHarness`, built against the same core
+instance as its editor, before loading it. The demo also exposes
+`globalThis.SpikypandaCore`. The bundle exports `globalThis.SpkPluginHarness`
+and only registers/re-exports the shared executable nodes; it does not embed a
+second harness runtime. The demo uses `loadPluginFromUrl`, the real editor
+NodeRegistry and GraphViewer. The bundle smoke test checks both core and harness
+class identity. Node Editor remains a locally linked private upstream package.
 
 The browser builder explicitly loads `reflect-metadata`. Upstream Node-only
 dataset helpers are not supported in the browser; calls to those builtins throw
 instead of silently succeeding. The Node ESM loader and async Session adapter
 are temporary compatibility bridges that should be removed after upstream fixes.
+
+See [the refactoring note](REFACTORISATION_NOEUDS.md) for extension examples and
+the migration from `runStage`, `selectedSource` and node-bound services.

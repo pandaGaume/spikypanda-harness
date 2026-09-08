@@ -10,6 +10,14 @@ entre fiabilité et applicabilité et une mémoire relationnelle plus riche
 restent à implémenter en V2. Le terme V1 désigne ce jalon expérimental ;
 les paquets restent en version `0.1.0`.
 
+Une [refactorisation des nœuds exécutables](docs/REFACTORISATION_NOEUDS.md)
+succède à ce jalon : les comportements sont portés par héritage et surcharge
+dans les nœuds, sans `runStage()` central. Elle conserve la logique
+d'apprentissage V1 ; elle ne réalise pas encore la mémoire contextuelle V2.
+Le scénario Counter est isolé dans `examples/counter`. La bibliothèque reçoit
+un graphe explicite, construit avec les builders de core ou chargé depuis un
+document de l'éditeur.
+
 ## Overview
 
 SpikyPanda Harness is an experimental framework for building inspectable and
@@ -114,7 +122,8 @@ Use `npm run demo -- --no-open` or `HARNESS_OPEN_BROWSER=0` to disable opening.
 Set `HARNESS_PORT` only to explicitly choose a different fixed port. Browser
 storage is specific to each port. The demo loads the
 generated `SpkPluginHarness.js` through the existing Node Editor plugin loader,
-using the same core instance as its host. No remote service is called.
+using the same core and harness instances as its host. The host exposes
+`globalThis.SpikypandaHarness` before loading the plugin. No remote service is called.
 
 1. Click **Repartir sans mémoire** if a saved policy was loaded, then **Un pas**.
    The read-only memory graph grows from evaluated results, not from animation
@@ -128,9 +137,12 @@ using the same core instance as its host. No remote service is called.
 5. Edit the graph or rebuild it from the node palette. Invalid wiring, missing
    stages and disabled required nodes are rejected before any action.
 
-The graph format supports one instance of each of the 12 typed stages and two
-alternative decision branches. It is not yet a general workflow engine with
-arbitrary loops or parallel actions. Episodes are driven by the host.
+The default palette contains 12 executable node classes and two alternative
+decision branches. Trusted host factories can specialize nodes by inheritance
+or add typed intermediate nodes without modifying the runtime. The compiler
+validates one observation source, one experience sink, complete typed wiring
+and acyclicity, without fixing the node count. It is not yet a general workflow
+engine with arbitrary loops or parallel actions. Episodes are driven by the host.
 
 The memory graph is distinct from the executable flow below it. Its stable
 nodes and links are a projection of the real policy snapshot. In Counter,
@@ -153,8 +165,9 @@ host services; the demo world starts at zero with normal dynamics. Graph JSON
 does not serialize functions or service credentials. Observation, invocation and
 experience data are application data: redact sensitive fields before persistence.
 
-This milestone changes the initial visual node port contracts to opaque,
-session-bound frames. Rebuild old draft graphs with the Counter template.
+The post-V1 refactor preserves consolidated V1 harness and policy JSON documents.
+Wire payloads are opaque, typed, session-bound packets. Drafts from before the
+V1 port contract should still be rebuilt with the Counter template.
 
 See [docs/EXECUTION.md](docs/EXECUTION.md) for the execution contract and
 [docs/VALIDATION.md](docs/VALIDATION.md) for tests and known limits.

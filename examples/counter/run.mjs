@@ -1,5 +1,5 @@
-import { PolicyGraph } from "../../packages/harness/dist/index.js";
-import { createCounterHarness, createGraphDriver } from "../../packages/plugin-harness/dist/index.js";
+import { PolicyGraph, createGraphDriver } from "../../packages/harness/dist/index.js";
+import { createCounterHarness } from "./harness.mjs";
 import { CounterWorld, createCounterRuntime } from "./world.mjs";
 
 const world = new CounterWorld();

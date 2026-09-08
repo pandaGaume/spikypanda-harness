@@ -1,5 +1,7 @@
-import { AdaptivePolicyRuntime, CapabilityRegistry, abortable } from "../../packages/harness/dist/index.js";
+import { AdaptivePolicyRuntime, CapabilityRegistry, createGraphDriver, abortable } from "../../packages/harness/dist/index.js";
 import { MockReasoningProvider } from "../../packages/provider-mock/dist/index.js";
+
+import { createCounterHarness } from "./harness.mjs";
 
 export class CounterWorld {
     value = 0;
@@ -26,7 +28,7 @@ export function counterReasoner(input) {
         rationale: evidence ? "Direction inferred from the most recent observed failed move" : "Initial hypothesis: positive commands increase the counter" };
 }
 
-export function createCounterRuntime(policy, world, { onStage, delayMs = 0 } = {}) {
+export function createCounterRuntime(policy, world, { onStage, delayMs = 0, driver = createGraphDriver(createCounterHarness(world.target)) } = {}) {
     const capabilities = new CapabilityRegistry();
     capabilities.register({
         descriptor: { id: "counter.move", description: "Send a signed unit command to the counter", replayPolicy: "automatic",
@@ -42,7 +44,7 @@ export function createCounterRuntime(policy, world, { onStage, delayMs = 0 } = {
         if (delayMs) await abortable(() => new Promise(resolve => setTimeout(resolve, delayMs)), input.signal);
         return counterReasoner(input);
     });
-    const runtime = new AdaptivePolicyRuntime({ policy, capabilities, fallback, observer: world, onStage,
+    const runtime = new AdaptivePolicyRuntime({ driver, policy, capabilities, fallback, observer: world, onStage,
         safetyGuard: { async validate(_decision, context) { return { allowed: Math.abs(Number(context.state.features.value)) < 20, reason: "Counter safety boundary reached" }; } },
         evaluator: { evaluate({ context, stateAfter, result }) {
             const target = Number(context.intention.parameters.target);

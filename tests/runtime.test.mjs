@@ -2,10 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
     AdaptivePolicyRuntime,
+    createGraphDriver,
     CapabilityRegistry,
     PolicyGraph,
 } from "../packages/harness/dist/index.js";
 import { MockReasoningProvider } from "../packages/provider-mock/dist/index.js";
+
+import { createCounterHarness } from "../examples/counter/harness.mjs";
 
 test("fallback use decreases while counter success stays stable", async () => {
     const world = {
@@ -28,6 +31,7 @@ test("fallback use decreases while counter success stays stable", async () => {
         invocation: { actionId: "increment", capabilityId: "counter.increment", input: null },
     }));
     const runtime = new AdaptivePolicyRuntime({
+        driver: createGraphDriver(createCounterHarness()),
         policy: new PolicyGraph(),
         fallback,
         capabilities,

@@ -1,9 +1,12 @@
 import {
     AdaptivePolicyRuntime,
+    createGraphDriver,
     CapabilityRegistry,
     PolicyGraph,
 } from "../../packages/harness/dist/index.js";
 import { MockReasoningProvider } from "../../packages/provider-mock/dist/index.js";
+
+import { createPolicyFlowDefinition } from "../shared/policy-flow.mjs";
 
 class HeliosWorld {
     co2Ppm = 1200;
@@ -52,7 +55,9 @@ const fallback = new MockReasoningProvider(() => {
     };
 });
 
+const intention = { id: "maintain-safe-atmosphere", description: "Return CO2 toward the safe envelope" };
 const runtime = new AdaptivePolicyRuntime({
+    driver: createGraphDriver(createPolicyFlowDefinition(intention)),
     policy,
     fallback,
     capabilities,
@@ -65,7 +70,6 @@ const runtime = new AdaptivePolicyRuntime({
     },
 });
 
-const intention = { id: "maintain-safe-atmosphere", description: "Return CO2 toward the safe envelope" };
 const rows = [];
 for (let day = 1; day <= 45; day += 1) {
     world.phase = day <= 15 ? "nominal" : day <= 30 ? "degraded" : "recovered";

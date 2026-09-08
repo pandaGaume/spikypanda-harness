@@ -1,4 +1,4 @@
-import { Graph, GraphNode, GraphOLink, type INode, type IOlink } from "@spiky-panda/core";
+import { GraphBuilder, GraphNode, GraphOLink, type IGraph, type INode, type IOlink } from "@spiky-panda/core";
 import { createDecisionContext, stableStringify, transitionKey as makeTransitionKey } from "./canonical.js";
 import { immutableCopy, validateDecision, validateState, validateIntention, validateEvaluation } from "./validation.js";
 import { ExactStateMatcher } from "./matching.js";
@@ -123,7 +123,7 @@ export interface RecordExperienceInput {
 }
 
 export class PolicyGraph {
-    private readonly graph = new Graph<PolicyNode, PolicyLink>();
+    private readonly graph = new GraphBuilder<PolicyNode, PolicyLink>().build();
     private readonly contexts = new Map<string, ContextNode>();
     private readonly actions = new Map<string, ActionNode>();
     private readonly capabilities = new Map<string, CapabilityNode>();
@@ -140,7 +140,7 @@ export class PolicyGraph {
         this.plasticity = immutableCopy(plasticity);
     }
 
-    public graphView(): Graph<PolicyNode, PolicyLink> {
+    public graphView(): IGraph<PolicyNode, PolicyLink> {
         return this.graph;
     }
 

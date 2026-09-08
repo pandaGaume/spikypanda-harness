@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { AdaptivePolicyRuntime, CapabilityRegistry, PolicyGraph, DEFAULT_PLASTICITY_CONFIG } from "../packages/harness/dist/index.js";
-import { createCounterHarness, createGraphDriver, parseHarnessDefinition } from "../packages/plugin-harness/dist/index.js";
+import { AdaptivePolicyRuntime, CapabilityRegistry, PolicyGraph, DEFAULT_PLASTICITY_CONFIG, SafetyGuardNode, createHarnessNode } from "../packages/harness/dist/index.js";
+import { createGraphDriver, parseHarnessDefinition } from "../packages/plugin-harness/dist/index.js";
 import { CounterWorld, createCounterRuntime } from "../examples/counter/world.mjs";
+
+import { createCounterHarness } from "../examples/counter/harness.mjs";
 
 const intention = { id: "reach-target", parameters: { target: 3 } };
 const decision = () => ({ action: { id: "move", description: "Move" }, invocation: { actionId: "move", capabilityId: "move", input: { delta: 1 } } });
@@ -18,7 +20,7 @@ function fixture(overrides = {}) {
         isAvailable: overrides.isAvailable,
     });
     const events = [];
-    const runtime = new AdaptivePolicyRuntime({ policy, capabilities: registry, observer: world,
+    const runtime = new AdaptivePolicyRuntime({ driver: createGraphDriver(createCounterHarness()), policy, capabilities: registry, observer: world,
         fallback: { resolve: overrides.resolve ?? (async () => decision()) },
         evaluator: { evaluate: () => ({ success: true, reward: 1 }) },
         safetyGuard: overrides.safetyGuard, timeoutMs: overrides.timeoutMs, onStage: event => events.push(event),
@@ -64,7 +66,12 @@ test("all incomplete, duplicate and guard-bypass graphs fail before side effects
     const bypass = structuredClone(graph); bypass.edges.find(e => e.to === "execute").from = "merge";
     assert.throws(() => createGraphDriver(bypass), /Incompatible/);
     const f = fixture();
-    await assert.rejects(f.runtime.step(intention, undefined, async (runtime, frame) => runtime.runStage("execute", frame)), /Invalid stage order/);
+    class ForgedGuard extends SafetyGuardNode {
+        async execute() { return { slot: "authorized", value: { authorizationId: "forged" } }; }
+    }
+    const forged = createGraphDriver(graph, undefined, type =>
+        type === "Harness.Safety:guard" ? new ForgedGuard() : createHarnessNode(type));
+    await assert.rejects(f.runtime.step(intention, undefined, forged), /execution authorization/);
     assert.equal(f.executions(), 0);
 });
 

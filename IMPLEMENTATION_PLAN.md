@@ -25,6 +25,27 @@ Scope remains deliberately limited to a single acyclic decision graph. A real
 LLM adapter, general workflows, production authorization and continuous HELIOS
 resilience experiments remain future work. See `docs/VALIDATION.md`.
 
+## Delivered after V1: inherited executable nodes
+
+Business behavior now lives in the concrete `HarnessNode` subclasses through
+`execute(input, session)` overrides. `AdaptivePolicyRuntime` only owns the
+decision lifecycle; it no longer dispatches stages. `HarnessSession` owns
+run-local services and data, while `ExecutionAuthority` enforces authorization
+at the capability boundary. Headless and visual paths share the same compiled
+core graph. The plugin registers those shared classes.
+
+Graph construction uses core's `RuntimeGraphBuilder`, not a parallel graph
+implementation. Hosts inject an explicit driver; the library has no default
+scenario. Counter and the illustrative topology live under `examples/`.
+Host-built graphs can execute directly without serializing them first.
+
+Trusted factories can override a node or insert an intermediate typed node
+without changing the runtime. Tests compare the new execution against the
+consolidated V1 trace and verify extensions, session isolation and authorization.
+The detailed contract and migration are in
+[docs/REFACTORISATION_NOEUDS.md](docs/REFACTORISATION_NOEUDS.md).
+Learning rules and contextual-memory V2 remain unchanged.
+
 ## Phase 0: upstream package readiness
 
 - Make `@spikypanda/nodeeditor` installable from an external repository.
