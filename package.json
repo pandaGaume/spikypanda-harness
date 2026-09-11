@@ -14,12 +14,21 @@
     "build": "tsc -b",
     "clean": "tsc -b --clean",
     "test": "npm run build && node --import ./scripts/register-spikypanda-loader.mjs --test tests/*.test.mjs",
+    "experiment:counter:v3": "npm run build && node --import ./scripts/register-spikypanda-loader.mjs examples/counter/run-v3.mjs",
     "experiment:counter": "npm run build && node --import ./scripts/register-spikypanda-loader.mjs examples/counter/run.mjs",
     "experiment:helios": "npm run build && node --import ./scripts/register-spikypanda-loader.mjs examples/helios/run.mjs",
     "link:spikypanda": "node scripts/link-spikypanda.mjs",
     "build:demo": "npm run build && node scripts/build-browser.mjs",
     "test:bundle": "npm run build:demo && node --import ./scripts/register-spikypanda-loader.mjs --test tests/bundle.smoke.mjs",
-    "demo": "npm run build:demo && node scripts/serve-demo.mjs"
+    "demo": "npm run build:demo && node scripts/serve-demo.mjs",
+    "benchmark:production": "npm run build && node benchmarks/production-v1/run.mjs",
+    "test:benchmark": "node --test tests/production-benchmark.test.mjs",
+    "test:benchmark:langgraph": "npm --prefix benchmarks/comparators/langgraph test --workspaces=false",
+    "test:benchmark:harness": "npm run build && node --import ./scripts/register-spikypanda-loader.mjs --test tests/production-harness.test.mjs",
+    "benchmark:compare": "node benchmarks/production-v1/compare.mjs",
+    "experiment:topology:temporal": "npm run build && node --import ./scripts/register-spikypanda-loader.mjs benchmarks/topology-t2/run.mjs",
+    "experiment:topology": "npm run build && node --import ./scripts/register-spikypanda-loader.mjs examples/topology/run.mjs",
+    "experiment:temporal": "npm run build && node --import ./scripts/register-spikypanda-loader.mjs benchmarks/temporal-v1/run-signals.mjs"
   },
   "devDependencies": {
     "typescript": "^5.4.0",

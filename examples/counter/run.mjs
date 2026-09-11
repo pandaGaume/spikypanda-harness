@@ -1,14 +1,14 @@
-import { PolicyGraph, createGraphDriver } from "../../packages/harness/dist/index.js";
-import { createCounterHarness } from "./harness.mjs";
-import { CounterWorld, createCounterRuntime } from "./world.mjs";
+import { createGraphDriver } from "../../packages/harness/dist/index.js";
+import { createCounterHarnessV2, createCounterPolicy, createCounterRuntimeV2 } from "./contextual.mjs";
+import { CounterWorld } from "./world.mjs";
 
 const world = new CounterWorld();
-const { runtime, fallback } = createCounterRuntime(new PolicyGraph(), world);
-const definition = createCounterHarness();
+const { runtime, fallback } = createCounterRuntimeV2(createCounterPolicy(), world);
+const definition = createCounterHarnessV2();
 const driver = createGraphDriver(definition);
 const rows = [];
-for (let episode = 1; episode <= 20; episode++) {
-    if (episode === 11 || episode === 16) world.invert();
+for (let episode = 1; episode <= 25; episode++) {
+    if (episode === 11 || episode === 16 || episode === 21) world.invert();
     world.reset();
     const before = runtime.metrics.snapshot();
     const calls = fallback.calls;

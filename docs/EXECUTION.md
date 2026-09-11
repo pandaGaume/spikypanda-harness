@@ -1,4 +1,4 @@
-# Execution contract, executable nodes after V1
+# Execution contract, executable nodes and contextual V2
 
 ## Shared pipeline
 
@@ -104,7 +104,9 @@ transaction guarantee in this milestone.
 edges and the intention. It contains neither the policy nor runtime services.
 Incomplete drafts can be saved. Execution validates port types, complete wiring,
 enabled nodes, one observation source, one experience sink and an acyclic graph.
-The default palette still has 12 nodes, but the compiler no longer requires
+The catalogue has 12 V1 nodes, two V2 specializations and two V3 nodes (16 total).
+Counter V1/V2 use 12 nodes; Counter V3 uses 13.
+The compiler no longer requires
 exactly that count or a hardcoded predecessor table. All declared ports require
 one wire; the built-in merge is ready with either of its alternative inputs.
 Source and sink extensions must inherit `StateObserverNode` and
@@ -149,3 +151,55 @@ are temporary compatibility bridges that should be removed after upstream fixes.
 
 See [the refactoring note](REFACTORISATION_NOEUDS.md) for extension examples and
 the migration from `runStage`, `selectedSource` and node-bound services.
+
+## Contextual V2 extension
+
+The base PolicyGraph and its V1 tests remain available. ContextualPolicyGraph
+adds conditional contexts, operating-mode nodes and auditable attributions.
+An OperatingContextTracker is injected by the host, one per observed world.
+Contextual lookup and recording nodes override their V1 counterparts. They use
+the same graph builder, session envelope and execution authority.
+
+A completed action can be stored as pending evidence without immediately
+changing a skill's statistics. Its trace then has no transitionAfter.
+The original observation and prior hypothesis remain in the evidence record;
+attribution revisions determine which conditional skill receives the outcome.
+
+Version 2 snapshots preserve modes, effect-model identity, validated settings,
+revision history and explicit provenance relations. Restore them with
+ContextualPolicyGraph.restore, then attach a matching host effect provider.
+Applicability starts unknown in a fresh tracker. Version 1 imports stay
+unattributed and cannot confer conditional replay eligibility.
+
+See [the V2 contract and limits](V2_MEMOIRE_CONTEXTUELLE.md) for novelty
+confirmation, bounded growth, revision semantics and the deterministic sample.
+
+## Cue observer 0.1, first V3 step
+
+The host injects a CueObserver with the same ContextualPolicyGraph as its local
+OperatingContextTracker. CueObserverNode assesses allowed current measurements.
+CuePolicyLookupNode extends contextual lookup: shadow preserves V2 behavior;
+active recognized cues select a known mode, initial learning retains V2, and
+missing/ambiguous/novel cues disable direct replay and use the reasoning path.
+
+The assessment contains observation identity, encoder/schema identity, model
+revision, normalized values, learned relevance, weighted embeddings, coverage,
+mode distances and prior-experience IDs. It is checked again before selection.
+It never authorizes an execution. Existing guard, approval, argument validation,
+fresh-observation verification, receipts and recording remain enforced.
+
+The contextual recorder accepts the cue-selected prior hypothesis but attributes
+the completed experience from its observed effect, not from the cue prediction.
+Those attributions and raw pre-action observations train the next assessment.
+The adaptive metric reads at most 24 usable recent samples per mode for effective
+learning, with recency decay. It currently scans the audit history to find them.
+There is no independent mutable vector database or background training process.
+
+CueMemorySnapshot version 3 wraps a version 2 policy plus this encoder's schema
+and configuration. AdaptiveCueObserver.restore validates cue diagnostics and
+past references, then reconstructs its metric from raw evidence. Counter can
+import V1/V2 without invented measurements and upgrade its old graph in memory.
+The synchronous CueObserver interface is replaceable by trusted host code;
+async encoders and other persisted formats require explicit future extensions.
+
+See [the algorithm, limits and product direction](OBSERVATEUR_V0_1.md).

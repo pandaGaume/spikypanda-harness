@@ -18,8 +18,9 @@ export function contextKey(state: State, intention: Intention): string {
     return stableStringify(intention.parameters ? [state.id, intention.id, intention.parameters] : [state.id, intention.id]);
 }
 
-export function createDecisionContext(state: State, intention: Intention): DecisionContext {
-    return { key: contextKey(state, intention), state, intention };
+export function createDecisionContext(state: State, intention: Intention, operatingContextId?: string): DecisionContext {
+    const key = contextKey(state, intention);
+    return operatingContextId ? { key: stableStringify([key, "operating", operatingContextId]), state, intention, operatingContextId } : { key, state, intention };
 }
 
 export function transitionKey(context: DecisionContext, actionId: string, capabilityId: string, input: JsonValue): string {

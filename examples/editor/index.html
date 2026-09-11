@@ -6,36 +6,47 @@
   <link rel="stylesheet" href="./app.css">
 </head>
 <body>
-  <header><div class="brand">SP<span>•</span>H</div><div><h1>Harness Lab <small>EXPERIMENTAL / 01</small></h1><p>Observer. Décider. Agir. Réapprendre.</p></div><span class="local">● Local · raisonneur simulé</span></header>
+  <header><div class="brand">SP<span>•</span>H</div><div><h1>Harness Lab <small>V3 / OBSERVATEUR 0.1</small></h1><p>Observer. Décider. Agir. Réapprendre.</p></div><span class="local">● Local · raisonneur simulé</span></header>
   <main>
     <aside>
       <section><h2>01 / Le monde</h2><div class="counter"><output id="value">0</output><span>cible <b id="target-label">3</b></span></div><p id="dynamics">Dynamique normale</p>
         <label for="target">Intention : atteindre la cible</label><input id="target" type="number" value="3" min="1" max="10">
-        <button id="invert" class="warning">Inverser la dynamique</button><p class="hint">L'inversion n'est pas communiquée au raisonneur. Il doit l'inférer des résultats observés.</p>
+        <button id="invert" class="warning">Inverser la dynamique</button><p class="hint">Le commutateur reste caché au harnais. Un capteur simulé fournit un indice corrélé au fonctionnement, si ses mesures sont visibles.</p>
       </section>
-      <section><h2>02 / Exécuter</h2><div class="buttons"><button id="step" class="primary">Un pas</button><button id="episode">Un épisode</button></div><button id="train">Entraîner (8 épisodes)</button><button id="stop" disabled>Arrêter</button><label class="check"><input id="slow" type="checkbox" checked> Ralentir pour voir l'apprentissage</label><p class="hint">Un pas = un tour du flux. Un épisode repart de 0 et conserve la mémoire. Limite : 20 actions par épisode.</p><button id="clear-memory">Repartir sans mémoire</button><button id="restore-memory" disabled>Retrouver la mémoire précédente</button><p class="hint">Ces deux boutons ne modifient pas la sauvegarde du navigateur. La mémoire précédente est récupérable jusqu'à la fermeture ou au rechargement de la page.</p></section>
-      <section><h2>03 / Composer</h2><label for="node-type">Ajouter un nœud</label><select id="node-type"></select><button id="add">Ajouter</button><div class="buttons"><button id="empty">Graphe vide</button><button id="template">Modèle Counter</button></div><button id="fit">Centrer le graphe</button><p class="hint">Reliez les ports par glisser-déposer. Sélection + Suppr pour retirer. Le graphe visible est celui exécuté.</p></section>
-      <section><h2>04 / Sauvegarder</h2><div class="buttons"><button id="save">Sauvegarder</button><button id="reload">Recharger</button></div><div class="buttons"><button id="export-harness">Harnais ↓</button><button id="export-policy">Policy ↓</button></div><label class="file">Importer un harnais<input id="import-harness" type="file" accept="application/json,.json"></label><label class="file">Importer une policy<input id="import-policy" type="file" accept="application/json,.json"></label><p class="hint">Deux documents distincts. Recharger crée un nouveau runtime et remet le monde à zéro, en dynamique normale.</p></section>
+      <section><h2>02 / L'observateur</h2>
+        <label for="cue-mode">Influence sur la décision</label><select id="cue-mode"><option value="active">Actif : utiliser les indices</option><option value="shadow">Observation seule : logique V2</option></select>
+        <p class="hint">Changer ce mode remet le monde et les compteurs à zéro, sans effacer la mémoire.</p>
+        <label for="cue-visibility">Mesures du capteur simulé</label><select id="cue-visibility"><option value="visible">Visibles</option><option value="hidden">Masquées</option><option value="noisy">Fortement bruitées</option></select>
+        <p class="hint">Entraînez 8 épisodes, inversez et entraînez encore. Ensuite, revenez au fonctionnement connu : les indices peuvent le reconnaître avant l'action. À la cible, l'épisode suivant repart de zéro.</p>
+      </section>
+      <section><h2>03 / Exécuter</h2><div class="buttons"><button id="step" class="primary">Un pas</button><button id="episode">Un épisode</button></div><button id="train">Entraîner (8 épisodes)</button><button id="stop" disabled>Arrêter</button><label class="check"><input id="slow" type="checkbox" checked> Ralentir pour voir l'apprentissage</label><p class="hint">Un pas = un tour du flux. Un épisode repart de 0 et conserve la mémoire. Limite : 20 actions par épisode.</p><button id="clear-memory">Repartir sans mémoire</button><button id="restore-memory" disabled>Retrouver la mémoire précédente</button><p class="hint">Ces deux boutons ne modifient pas la sauvegarde du navigateur. La mémoire précédente est récupérable jusqu'à la fermeture ou au rechargement de la page.</p></section>
+      <section><h2>04 / Composer</h2><label for="node-type">Ajouter un nœud</label><select id="node-type"></select><button id="add">Ajouter</button><div class="buttons"><button id="empty">Graphe vide</button><button id="template">Modèle Counter</button></div><button id="fit">Centrer le graphe</button><p class="hint">Reliez les ports par glisser-déposer. Sélection + Suppr pour retirer. Le graphe visible est celui exécuté.</p></section>
+      <section><h2>05 / Sauvegarder</h2><div class="buttons"><button id="save">Sauvegarder</button><button id="reload">Recharger</button></div><div class="buttons"><button id="export-harness">Harnais ↓</button><button id="export-policy">Policy ↓</button></div><label class="file">Importer un harnais<input id="import-harness" type="file" accept="application/json,.json"></label><label class="file">Importer une policy<input id="import-policy" type="file" accept="application/json,.json"></label><p class="hint">Deux documents distincts. Recharger crée un nouveau runtime et remet le monde à zéro, en dynamique normale.</p></section>
     </aside>
     <div class="workspace">
       <div class="metrics"><div><small>Actions évaluées</small><strong id="actions">0</strong></div><div><small>Rejeu policy</small><strong id="policy-ratio">0 %</strong></div><div><small>Appels raisonneur</small><strong id="fallback-count">0</strong></div><div><small>Progrès / actions</small><strong id="success-rate">0 %</strong></div></div>
+      <section class="cue-section" aria-labelledby="cue-title">
+        <div class="canvas-header"><h2 id="cue-title">Observateur 0.1 / indices avant action</h2><span>Métrique adaptative, sans réseau neuronal</span></div>
+        <p class="memory-intro">Les mesures actuelles sont comparées aux expériences passées. Leur pouvoir de distinction est appris puis révisé. Reconnaître un fonctionnement ne rend pas ses actions automatiquement fiables.</p>
+        <div id="cue-panel" aria-live="polite"></div>
+      </section>
       <section class="memory-panel" aria-labelledby="memory-title">
         <div class="canvas-header"><h2 id="memory-title">Mémoire / le graphe qui apprend</h2><span id="memory-summary"></span></div>
-        <p class="memory-intro">Le flux reste le même. À chaque tour, il lit cette mémoire, agit, évalue le résultat puis révise ses liens.</p>
+        <p class="memory-intro">Le flux observe et agit. La mémoire apprend des fonctionnements à partir des effets, attribue les expériences et révise la fiabilité de chaque branche dans son contexte.</p>
         <div class="memory-cycle"><span>Lire la mémoire</span><b>→</b><span>Agir et vérifier</span><b>→</b><span>Réviser la mémoire</span><b>↻</b><span>Tour suivant</span></div>
         <p id="memory-phase" class="hint">En attente du prochain tour</p>
         <div id="memory-graph" aria-describedby="memory-legend"></div>
-        <p id="memory-legend" class="hint">Liens verts : rejouables sous réserve des contrôles. Pointillés : à réévaluer. Leur épaisseur suit la confiance actuelle, jamais un poids définitif. Vue en lecture seule.</p>
+        <p id="memory-legend" class="hint">Vert : branche applicable et assez fiable pour le rejeu, sous contrôle. Une branche en sommeil conserve sa fiabilité. Les liens violets montrent la provenance de l’expérience sélectionnée ; un résultat contradictoire apparaît en orange. Aucun score n’est définitif.</p>
         <p id="memory-change" class="memory-change" aria-live="polite"></p>
         <div class="canvas-header memory-history-heading"><h2>Nœuds d'expérience</h2><span id="memory-history-count"></span></div>
         <div id="memory-history" aria-label="Dernières expériences mémorisées"></div>
         <p id="memory-detail" class="hint" aria-live="polite"></p>
-        <p class="hint">Choisissez une expérience pour repérer son lien. Les expériences sont stockées comme des nœuds sans arêtes propres ; leur association au lien est déduite de leurs données. Ici, 0, 1 et 2 partagent le contexte « sous la cible » lorsque la cible vaut 3.</p>
+        <p class="hint">Choisissez une expérience pour voir son hypothèse avant action, son attribution actuelle et ses révisions. Quatre expériences récentes sont dessinées, douze sont sélectionnables et toutes sont conservées. L’historique V1 importé reste sans attribution inventée.</p>
       </section>
       <div class="canvas-header"><h2>Harnais / le flux répété à chaque décision</h2><span><i class="dot green"></i> chemin parcouru <i class="dot purple"></i> raisonneur</span></div>
       <div id="graph" aria-label="Éditeur du harnais"></div>
       <div id="status" role="status">Prêt. Lancez un épisode pour construire les premières expériences.</div>
-      <div class="bottom"><section><h2>Policy / mémoire plastique</h2><p class="hint">Confiance et récompense révisables. L'historique ne devient jamais un poids définitif.</p><div class="table-scroll"><table><thead><tr><th>Contexte</th><th>Action</th><th>Confiance</th><th>Récompense</th><th>Évidence</th><th>Rejeu</th></tr></thead><tbody id="weights"></tbody></table></div></section><section><h2>Journal / dernières décisions</h2><ol id="trace"></ol></section></div>
+      <div class="bottom"><section><h2>Policy / mémoire plastique</h2><p class="hint">Confiance et récompense révisables. L'historique ne devient jamais un poids définitif.</p><div class="table-scroll"><table><thead><tr><th>Contexte</th><th>Action</th><th>Fiabilité</th><th>Récompense</th><th>Évidence</th><th>Applicabilité</th><th>Rejeu</th></tr></thead><tbody id="weights"></tbody></table></div></section><section><h2>Journal / dernières décisions</h2><ol id="trace"></ol></section></div>
       <footer>Counter est un test de mécanisme, pas une preuve de résilience industrielle. Aucun LLM distant ni secret dans cette démo.</footer>
     </div>
   </main>

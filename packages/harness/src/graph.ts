@@ -2,7 +2,8 @@ import { RuntimeGraphBuilder, Scheduler, type Channel, type RuntimeGraph } from 
 import { immutableCopy, validateIntention } from "./validation.js";
 import type { HarnessDriver, NodeObserver } from "./contracts.js";
 import type { Intention } from "./model.js";
-import { HarnessNode, StateObserverNode, ExperienceRecorderNode, createHarnessNode, type HarnessNodeFactory } from "./nodes.js";
+import { HarnessNode, StateObserverNode, ExperienceRecorderNode } from "./nodes.js";
+import { createHarnessNode, type HarnessNodeFactory } from "./catalog.js";
 
 export interface HarnessDefinition {
     readonly version: 1;

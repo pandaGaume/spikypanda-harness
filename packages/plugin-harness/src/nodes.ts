@@ -5,3 +5,7 @@ export {
     OutcomeObserverNode, OutcomeEvaluatorNode, ExperienceRecorderNode, HARNESS_NODES, createHarnessNode, harnessPort,
 } from "@spiky-panda/harness";
 export type { HarnessNodeFactory } from "@spiky-panda/harness";
+
+export { ContextualPolicyLookupNode, ContextualExperienceRecorderNode } from "@spiky-panda/harness";
+
+export { CueObserverNode, CuePolicyLookupNode } from "@spiky-panda/harness";

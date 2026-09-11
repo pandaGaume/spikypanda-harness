@@ -1,3 +1,5 @@
+import type { CueObserver, CueRunMode } from "./cue-types.js";
+import type { OperatingContextTracker } from "./operating-context.js";
 import { Session, isLinkRef, type IRuntimeGraph, type IRuntimeNode } from "@spiky-panda/core";
 import type { DecisionTrace, Intention, OutcomeEvaluator, PolicyFallback, StateObserver } from "./model.js";
 import type { HarnessRun, NodeObserver, StageEvent } from "./contracts.js";
@@ -9,6 +11,9 @@ import { ExecutionAuthority } from "./authorization.js";
 import { abortable, checkAbort, immutableCopy } from "./validation.js";
 
 export interface HarnessServices {
+    readonly operatingContexts?: OperatingContextTracker;
+    readonly cueObserver?: CueObserver;
+    readonly cueMode?: CueRunMode;
     readonly policy: PolicyGraph;
     readonly fallback: PolicyFallback;
     readonly observer: StateObserver;
@@ -115,4 +120,3 @@ export class HarnessSession extends Session {
         }
     }
 }
-

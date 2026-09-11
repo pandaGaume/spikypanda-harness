@@ -1,3 +1,5 @@
+import type { CueDecision } from "./cue-types.js";
+import type { OperatingMemorySnapshot } from "./operating-types.js";
 import { GraphBuilder, GraphNode, GraphOLink, type IGraph, type INode, type IOlink } from "@spiky-panda/core";
 import { createDecisionContext, stableStringify, transitionKey as makeTransitionKey } from "./canonical.js";
 import { immutableCopy, validateDecision, validateState, validateIntention, validateEvaluation } from "./validation.js";
@@ -100,7 +102,8 @@ export interface SerializedTransition {
 }
 
 export interface PolicySnapshot {
-    readonly version: 1;
+    readonly version: 1 | 2;
+    readonly operatingMemory?: OperatingMemorySnapshot;
     readonly plasticity?: PlasticityConfig;
     readonly contexts: ReadonlyArray<DecisionContext>;
     readonly actions: ReadonlyArray<ActionDefinition>;
@@ -111,6 +114,8 @@ export interface PolicySnapshot {
 }
 
 export interface RecordExperienceInput {
+    readonly cues?: CueDecision;
+    readonly operatingContextId?: string;
     readonly decisionId?: string;
     readonly stateBefore: State;
     readonly intention: Intention;
@@ -140,13 +145,14 @@ export class PolicyGraph {
         this.plasticity = immutableCopy(plasticity);
     }
 
-    public graphView(): IGraph<PolicyNode, PolicyLink> {
+    public graphView(): IGraph<INode, IOlink> {
         return this.graph;
     }
 
-    public findCandidateActions(state: State, intention: Intention): PolicyCandidate[] {
+    public findCandidateActions(state: State, intention: Intention, operatingContextId?: string): PolicyCandidate[] {
         const candidates: PolicyCandidate[] = [];
         for (const contextNode of this.contexts.values()) {
+            if (contextNode.context.operatingContextId !== operatingContextId) continue;
             if (contextNode.context.intention.id !== intention.id) continue;
             if (stableStringify(contextNode.context.intention.parameters ?? {}) !== stableStringify(intention.parameters ?? {})) continue;
             const similarity = this.matcher.similarity(contextNode.context.state, state);
@@ -181,7 +187,7 @@ export class PolicyGraph {
         if (input.experienceId && this.experiences.some(n => n.experience.id === input.experienceId)) throw new Error("Duplicate experience ID");
         validateEvaluation(input.evaluation);
         const observedAt = input.observedAt ?? Date.now();
-        const context = createDecisionContext(input.stateBefore, input.intention);
+        const context = createDecisionContext(input.stateBefore, input.intention, input.operatingContextId);
         const contextNode = this.ensureContext(context);
         const actionNode = this.ensureAction(input.decision.action);
         const capabilityNode = this.ensureCapability({
@@ -258,8 +264,8 @@ export class PolicyGraph {
             .reverse();
     }
 
-    public getTransitionStats(state: State, intention: Intention, invocation: ActionInvocation): TransitionStats | undefined {
-        const context = createDecisionContext(state, intention);
+    public getTransitionStats(state: State, intention: Intention, invocation: ActionInvocation, operatingContextId?: string): TransitionStats | undefined {
+        const context = createDecisionContext(state, intention, operatingContextId);
         const key = makeTransitionKey(context, invocation.actionId, invocation.capabilityId, invocation.input);
         const stats = this.transitions.get(key)?.stats;
         return stats ? { ...stats } : undefined;
@@ -302,7 +308,7 @@ export class PolicyGraph {
         for (const context of snapshot.contexts) {
             validateState(context.state);
             validateIntention(context.intention);
-            if (!context.state?.id || !context.intention?.id || context.key !== createDecisionContext(context.state, context.intention).key || policy.contexts.has(context.key)) throw new Error("Invalid or duplicate context");
+            if (!context.state?.id || !context.intention?.id || context.key !== createDecisionContext(context.state, context.intention, context.operatingContextId).key || policy.contexts.has(context.key)) throw new Error("Invalid or duplicate context");
             policy.ensureContext(context);
         }
         for (const action of snapshot.actions) {
@@ -346,7 +352,7 @@ export class PolicyGraph {
             validateIntention(experience.context.intention);
             if (!experience.result || typeof experience.result.ok !== "boolean" || !Number.isFinite(experience.observedAt) ||
                 !["policy", "fallback"].includes(experience.decision.source) ||
-                experience.context.key !== createDecisionContext(experience.context.state, experience.context.intention).key) throw new Error("Invalid experience payload");
+                experience.context.key !== createDecisionContext(experience.context.state, experience.context.intention, experience.context.operatingContextId).key) throw new Error("Invalid experience payload");
             const node = new ExperienceNode(experience);
             policy.experiences.push(node);
             policy.addNode(node);

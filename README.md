@@ -1,22 +1,91 @@
 # SpikyPanda Harness
 
-## État du jalon avant V2
+## État actuel : V3, observateur 0.1
 
-L'[état des lieux V1 du 8 septembre 2026](docs/ETAT_DES_LIEUX_V1.md)
-consigne les réalisations, les vérifications et les limites connues.
-Le harnais exécutable et la révision des scores sont opérationnels dans
-Counter. La reconnaissance de fonctionnements déjà rencontrés, la séparation
-entre fiabilité et applicabilité et une mémoire relationnelle plus riche
-restent à implémenter en V2. Le terme V1 désigne ce jalon expérimental ;
-les paquets restent en version `0.1.0`.
+La [mémoire contextuelle V2](docs/V2_MEMOIRE_CONTEXTUELLE.md) distingue la
+fiabilité d'une branche de son applicabilité au fonctionnement reconnu.
+Counter apprend M1 et M2 à partir des effets observés et réutilise une branche
+mature au retour d'un fonctionnement connu. Les poids restent révisables.
 
-Une [refactorisation des nœuds exécutables](docs/REFACTORISATION_NOEUDS.md)
-succède à ce jalon : les comportements sont portés par héritage et surcharge
-dans les nœuds, sans `runStage()` central. Elle conserve la logique
-d'apprentissage V1 ; elle ne réalise pas encore la mémoire contextuelle V2.
-Le scénario Counter est isolé dans `examples/counter`. La bibliothèque reçoit
-un graphe explicite, construit avec les builders de core ou chargé depuis un
-document de l'éditeur.
+L'[observateur 0.1](docs/OBSERVATEUR_V0_1.md) ajoute une reconnaissance avant
+action à partir d'indices numériques dont le pouvoir discriminant est appris.
+Il reste une métrique statistique simple, pas un CNN/GNN ni l'observateur final.
+Le mode observation seule conserve la V2 ; le mode actif utilise les indices
+reconnus et renvoie les cas incertains au raisonneur.
+
+Le [bilan V1](docs/ETAT_DES_LIEUX_V1.md) et la
+[refactorisation par héritage](docs/REFACTORISATION_NOEUDS.md) restent les
+références historiques. Les paquets restent en version `0.1.0`.
+Counter appartient aux exemples ; la bibliothèque reçoit un graphe explicite
+construit avec les builders de core, sans scénario implicite.
+
+## Prototype T1 : activer la mémoire
+
+Le [contrat d'activation topologique](docs/ACTIVATION_TOPOLOGIQUE_CONTRAT.md)
+définit la direction : reconnaissance par propagation dans la mémoire, sans
+classification de régime préalable. Le [prototype T1](docs/ACTIVATION_TOPOLOGIQUE_T1.md)
+exécute maintenant une mémoire-fixture avec les nœuds et builders de Core :
+conditions locales, ET/OU, arbitrage, garde-fous et journal en session.
+Couper une liaison pertinente supprime réellement sa proposition.
+
+Lancer `npm run experiment:topology` pour voir les traces et les décisions.
+Ce lot ne comporte ni spikes ni apprentissage automatique des connexions ;
+la dynamique temporelle est prévue en T2. Les variantes, résultats et démo
+navigateur V3 restent les témoins de comparaison.
+
+## Comparateur T2 : dynamique temporelle des branches
+
+`npm run experiment:topology:temporal` compare T1, lecture continue, spikes avec
+reset zéro et spikes avec reset modulé. Les potentiels vivent dans les sessions
+Core des branches, sans apprentissage de topologie ni de confiance.
+
+Les [128 comparaisons](docs/RESULTATS_TOPOLOGIE_T2.md) montrent un filtrage du
+transitoire, mais plus de replis et un conflit parfois masqué pendant la montée
+d'une branche concurrente. Aucune variante n'est promue par défaut.
+Le [protocole et l'algorithme](docs/ACTIVATION_TOPOLOGIQUE_T2.md) distinguent
+clairement les événements internes des actions réellement exécutées.
+
+## Trajectoire et questions ouvertes
+
+La [note de conception](docs/NOTE_PLASTICITE_ET_CONTEXTE.md) précise pourquoi
+les conditions d'utilité des actions doivent être apprises, pas pré-étiquetées.
+La [trajectoire V1, V2, V3 et suites](docs/TRAJECTOIRE_V1_V2_V3.md) distingue
+les acquis des propositions : observateur d'indices et embeddings en V3,
+diagnostic actif en V4, puis validation continue de la résilience.
+Les pistes CNN temporel et réseau de neurones de graphe restent à comparer ;
+aucun observateur neuronal n'est implémenté. Le premier palier V3 est livré ;
+l'apprentissage temporel, relationnel et le diagnostic actif restent à construire.
+
+L'objectif est l'autonomie produit : aucune dépendance commerciale obligatoire,
+et un minimum de dépendances tierces, y compris MIT, limitées aux fonctions
+périphériques remplaçables. Ajv reste acceptable. L'observateur n'ajoute aucune
+dépendance. Voir la [politique et les limites](docs/OBSERVATEUR_V0_1.md#autonomie-et-dépendances).
+
+## Banc de comparaison produit
+
+Le [banc cellule de production](docs/BENCHMARK_PRODUCTION_V1.md) fournit un
+monde continu indépendant du harnais, dix familles de scénarios et 330 cas
+reproductibles. Production, qualité, retard, énergie, dépassements, récupération
+et temps de calcul sont mesurés séparément, avec les échecs conservés.
+
+Une référence à règles simples et un adaptateur LangGraph local servent à
+valider l'instrument. LangGraph est optionnel, isolé des dépendances du produit.
+Le [premier relevé](docs/RESULTATS_BANC_INITIAL.md) conserve l'admission initiale.
+Les [résultats des graphes réels](docs/RESULTATS_GRAPHES_PRODUCTION.md) comparent
+maintenant règles, V1, V2 et V3, sans conclure à une supériorité du produit.
+La [note sur la généralisation](docs/GENERALISATION_ET_BANCS.md) distingue les cas
+fixes des variations réservées et du transfert ; la généralisation n'est pas
+encore mesurée. Les [vrais graphes V1/V2/V3](docs/RACCORDEMENT_GRAPHES_PRODUCTION.md)
+pilotent maintenant le banc, avec le même raisonneur déterministe et les mêmes
+protections. Le classement produit et le comparateur LangGraph avec mémoire
+restent à réaliser. Adopter l'existant, ne garder que notre mémoire ou abandonner le
+harnais sont des conclusions possibles, sans bonus pour le travail déjà investi.
+
+```sh
+npm run test:benchmark
+npm run benchmark:production -- --controller reference --split development --out dist/benchmarks
+npm run benchmark:production -- --controller harness-v3-active --scenario nominal --seed 101 --out dist/benchmarks
+```
 
 ## Overview
 
@@ -68,7 +137,10 @@ npm run link:spikypanda -- ../../spikypanda
 npm run build
 npm test
 npm run experiment:counter
+npm run experiment:counter:v3
 npm run experiment:helios
+npm run experiment:topology
+npm run experiment:topology:temporal
 npm run demo
 npm run test:bundle
 ```
@@ -80,9 +152,10 @@ packages are not both published. Pass the path to a SpikyPanda checkout, or set
 
 ## What the experiments demonstrate
 
-The Counter experiment and browser demo share the same world, reasoning mock
-and executable graph. They demonstrate cold-start fallback, consolidation,
-direct policy decisions and adaptation after two reversals of the environment
+The V2 Counter experiment and V3 browser demo share the base world and reasoning
+mock. The V3 sample adds simulated sensor measurements and an observer node.
+Use `experiment:counter:v3` to compare shadow and active observation. They demonstrate cold-start fallback, consolidation,
+direct policy decisions and conditional recall through A-B-A-B reversals of the environment
 dynamics. The mock receives observations and past failures, not the world's
 hidden direction. It is a deterministic reference, not a real LLM.
 
@@ -126,32 +199,35 @@ using the same core and harness instances as its host. The host exposes
 `globalThis.SpikypandaHarness` before loading the plugin. No remote service is called.
 
 1. Click **Repartir sans mémoire** if a saved policy was loaded, then **Un pas**.
-   The read-only memory graph grows from evaluated results, not from animation
-   fixtures. Contexts, actions and capabilities appear; each learned link shows
-   its current confidence and actual replay eligibility.
+   The first experience is pending. Two consistent command/effect observations
+   establish a mode; subsequent evidence consolidates its conditional skill.
 2. Keep **Ralentir pour voir l'apprentissage** enabled and run **Entraîner (8 épisodes)**.
    Repeated actions add experience nodes while revising the existing links.
 3. Click **Inverser la dynamique**, then run more episodes. Observe failures,
-   fallback reasoning and reconsolidation of the opposite action.
-4. Save, reload, and run again. The policy remains plastic after restoration.
-5. Edit the graph or rebuild it from the node palette. Invalid wiring, missing
+   attribution to a newly confirmed mode and learning of its appropriate action.
+   Invert again: learned sensor cues can recognize the known mode before acting.
+   Reliability, applicability and discriminant feature weights are separate.
+   The current observation at the target is a different scope; start a new episode
+   to observe recall below the target.
+4. Compare **Actif** with **Observation seule**. Switching resets the world and
+   counters but keeps learning. Mask or add noise to the sensor and inspect uncertainty.
+5. Save, reload, and run again. The memory remains plastic after restoration.
+6. Edit the graph or rebuild it from the node palette. Invalid wiring, missing
    stages and disabled required nodes are rejected before any action.
 
-The default palette contains 12 executable node classes and two alternative
+The V3 demo palette contains 13 executable node classes (the shared catalogue
+also retains the V1/V2 alternatives, 16 classes in total) and two alternative
 decision branches. Trusted host factories can specialize nodes by inheritance
 or add typed intermediate nodes without modifying the runtime. The compiler
 validates one observation source, one experience sink, complete typed wiring
 and acyclicity, without fixing the node count. It is not yet a general workflow
 engine with arbitrary loops or parallel actions. Episodes are driven by the host.
 
-The memory graph is distinct from the executable flow below it. Its stable
-nodes and links are a projection of the real policy snapshot. In Counter,
-values 0, 1 and 2 share the context "below target" for target 3. There is no new
-context for every numerical value. Experience nodes are currently isolated
-in the stored graph; the UI shows the latest 12 separately and derives their
-association to a transition from their records when selected. All experiences
-remain stored. The confidence shown on selection is the link's current value,
-not a reconstruction of its historical value.
+The memory graph is distinct from the executable flow. V2 includes learned
+operating modes, conditional contexts and auditable experience provenance.
+A dormant branch keeps its reliability but cannot replay until its mode is
+recognized. Four recent experiences are drawn and twelve are selectable;
+all remain stored. Displayed reliability is current, not a historical replay.
 
 **Repartir sans mémoire** creates a new in-memory policy with the same plasticity
 settings. **Retrouver la mémoire précédente** restores the previous policy
@@ -165,11 +241,43 @@ host services; the demo world starts at zero with normal dynamics. Graph JSON
 does not serialize functions or service credentials. Observation, invocation and
 experience data are application data: redact sensitive fields before persistence.
 
-The post-V1 refactor preserves consolidated V1 harness and policy JSON documents.
-Wire payloads are opaque, typed, session-bound packets. Drafts from before the
-V1 port contract should still be rebuilt with the Counter template.
+V3 memory snapshots wrap a version 2 policy plus the observer schema/configuration.
+V1/V2 imports preserve their history without invented sensor data. V1 remains
+unattributed, with no inherited conditional scores. Counter upgrades old sample
+graphs in memory by inserting the cue observer; saved documents are unchanged
+until an explicit save. Harness documents stay version 1.
+Wire payloads remain opaque, typed, session-bound packets.
 
 See [docs/EXECUTION.md](docs/EXECUTION.md) for the execution contract and
 [docs/VALIDATION.md](docs/VALIDATION.md) for tests and known limits.
 
 See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for the staged roadmap.
+
+## Expérience V3 : consolidation temporelle
+
+La variante `harness-v3-consolidated` compare la persistance des effets avant
+création d’un régime durable, sans changer l’observateur ni introduire de spikes.
+Voir [le mécanisme, les paramètres et les limites](docs/V3_CONSOLIDATION_TEMPORELLE.md).
+
+```sh
+npm run benchmark:production -- --controller harness-v3-consolidated --scenario nominal --seed 101 --out dist/benchmarks
+```
+
+## Expérience V3 : continu et spikes
+
+Les deux variantes temporelles réutilisent le LIF et les graphes du Core.
+Tout leur état temporel reste dans les sessions. La consolidation et la
+plasticité des connaissances sont inchangées.
+
+```sh
+npm run experiment:temporal -- --out dist/benchmarks
+npm run benchmark:production -- --controller harness-v3-spikes --seed 101 --out dist/benchmarks
+```
+
+Voir [le protocole et l’algorithme](docs/V3_PROPAGATION_TEMPORELLE.md) et
+[les résultats comparatifs](docs/RESULTATS_PROPAGATION_V3.md).
+
+La variante supplémentaire `harness-v3-spikes-modulated` conserve un potentiel
+proportionnel à l’indice courant après chaque spike. Les témoins précédents
+restent disponibles, avec un test de référence sur leurs 252 parcours.
+Voir [le reset modulé et son protocole](docs/V3_RESET_MODULE.md).

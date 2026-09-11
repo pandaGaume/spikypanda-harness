@@ -1,0 +1,15 @@
+{
+  "name": "spikypanda-benchmark-langgraph",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Optional isolated benchmark comparator, never a harness runtime dependency",
+  "scripts": {
+    "test": "node --test equivalence.test.mjs"
+  },
+  "dependencies": {
+    "@langchain/langgraph": "1.4.14",
+    "@langchain/core": "1.2.9",
+    "zod": "4.5.4"
+  }
+}

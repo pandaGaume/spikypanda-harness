@@ -158,29 +158,3 @@ export class ExperienceRecorderNode extends HarnessNode<EvaluatedExperience> {
             startedAt: session.startedAt, completedAt: session.now() });
     }
 }
-
-export const HARNESS_NODES = [
-    { type: "Harness.Observation:state", label: "Observer", ctor: StateObserverNode },
-    { type: "Harness.Policy:context", label: "Contexte + intention", ctor: DecisionContextNode },
-    { type: "Harness.Policy:lookup", label: "Chercher une policy", ctor: PolicyLookupNode },
-    { type: "Harness.Policy:confidence-gate", label: "Confiance suffisante ?", ctor: ConfidenceGateNode },
-    { type: "Harness.Reasoning:request", label: "Construire la demande", ctor: FallbackRequestNode },
-    { type: "Harness.Reasoning:provider", label: "Raisonneur (mock)", ctor: ReasoningProviderNode },
-    { type: "Harness.Policy:merge", label: "Fusion des branches", ctor: DecisionMergeNode },
-    { type: "Harness.Safety:guard", label: "Valider + autoriser", ctor: SafetyGuardNode },
-    { type: "Harness.Execution:capability", label: "Executer la capacite", ctor: CapabilityExecutorNode },
-    { type: "Harness.Observation:outcome", label: "Observer le resultat", ctor: OutcomeObserverNode },
-    { type: "Harness.Learning:evaluate", label: "Evaluer le progres", ctor: OutcomeEvaluatorNode },
-    { type: "Harness.Learning:record", label: "Apprendre", ctor: ExperienceRecorderNode },
-] as const;
-
-export type HarnessNodeFactory = (type: string) => HarnessNode;
-
-export function createHarnessNode(type: string): HarnessNode {
-    const entry = HARNESS_NODES.find(n => n.type === type);
-    if (!entry) throw new Error(`Unknown harness node type: ${type}`);
-    const node = new entry.ctor();
-    node.type = type;
-    return node;
-}
-

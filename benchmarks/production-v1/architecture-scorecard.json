@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "status": "protocol-template-not-a-ranking",
+  "decisionRule": "Choose the least costly maintainable solution meeting the agreed product needs. Continuing the custom harness is not the default verdict.",
+  "outcomes": [
+    "retain-custom-harness",
+    "retain-only-differentiating-observer-or-memory",
+    "adopt-existing-framework",
+    "use-simple-controller",
+    "insufficient-evidence"
+  ],
+  "candidateBusinessThresholds": {
+    "minimumRelevantGain": null,
+    "maximumIntegrationHours": null,
+    "maximumMaintenanceHoursPerRelease": null,
+    "acceptableLatencyMs": null,
+    "requiredScenarios": [],
+    "note": "Set before product ranking, with the user; no values invented from results.",
+    "requiredDomains": []
+  },
+  "candidates": [
+    {
+      "id": "rules-reference",
+      "admission": "instrument-tested",
+      "nativeProductEvaluation": "not-qualified",
+      "integrationHours": null,
+      "maintenanceHoursPerRelease": null,
+      "productOwnedLines": null
+    },
+    {
+      "id": "langgraph",
+      "version": "1.4.14",
+      "admission": "same-kernel-equivalence-tested",
+      "nativeProductEvaluation": "not-run",
+      "integrationHours": null,
+      "maintenanceHoursPerRelease": null,
+      "productOwnedLines": null,
+      "note": "Isolated benchmark dependency, not approved as a production dependency."
+    },
+    {
+      "id": "harness-v1",
+      "admission": "real-core-graph-integration-tested",
+      "nativeProductEvaluation": "synthetic-prototype-only-no-llm",
+      "integrationHours": null,
+      "maintenanceHoursPerRelease": null,
+      "productOwnedLines": null
+    },
+    {
+      "id": "harness-v2",
+      "admission": "real-core-graph-integration-tested",
+      "nativeProductEvaluation": "synthetic-prototype-only-no-llm",
+      "integrationHours": null,
+      "maintenanceHoursPerRelease": null,
+      "productOwnedLines": null
+    },
+    {
+      "id": "harness-v3-observer-0.1",
+      "admission": "real-core-graph-integration-tested",
+      "nativeProductEvaluation": "synthetic-prototype-only-no-llm",
+      "integrationHours": null,
+      "maintenanceHoursPerRelease": null,
+      "productOwnedLines": null,
+      "variants": [
+        "harness-v3-shadow",
+        "harness-v3-active"
+      ]
+    }
+  ],
+  "comparisonRequirements": [
+    "same-world-and-disturbance-tape",
+    "same-observation-and-action-contract",
+    "same-common-execution-guard",
+    "declared-memory-protocol",
+    "metered-common-reasoner-and-budget",
+    "matched-scenarios-seeds-and-versions",
+    "failures-and-non-recovery-retained",
+    "engineering-cost-recorded",
+    "competitive-configuration-reviewed",
+    "reserved-parameter-ranges-and-combinations",
+    "generalization-evidence-separate-from-regression"
+  ],
+  "generalization": {
+    "status": "not-measured",
+    "note": "New seeds within fixed families are not evidence of unseen-phenomenon or cross-system generalization.",
+    "protocol": "../../docs/GENERALISATION_ET_BANCS.md"
+  }
+}

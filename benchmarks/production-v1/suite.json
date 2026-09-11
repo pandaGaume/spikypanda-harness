@@ -1,0 +1,285 @@
+{
+  "id": "production-cell",
+  "version": "0.2.0",
+  "status": "candidate-not-industrially-calibrated",
+  "contractVersion": "2",
+  "metricsVersion": "2",
+  "generatorVersion": "1",
+  "plantVersion": "1",
+  "stepSeconds": 1,
+  "horizonSteps": 600,
+  "objective": {
+    "temperatureLimitC": 80,
+    "queueLimitParts": 40,
+    "recoveryHoldSteps": 10,
+    "recoveryWindowSteps": 90,
+    "serviceFraction": 0.9
+  },
+  "timing": {
+    "deadlineMs": 1000,
+    "clock": "fixed-step-compute-time-reported-separately"
+  },
+  "memoryProtocol": "cold-per-case-online-within-case",
+  "splits": {
+    "development": [
+      101,
+      102,
+      103
+    ],
+    "regression": [
+      211,
+      223,
+      227,
+      229,
+      233,
+      239,
+      241,
+      251,
+      257,
+      263
+    ],
+    "evaluation": [
+      1009,
+      1013,
+      1019,
+      1021,
+      1031,
+      1033,
+      1039,
+      1049,
+      1051,
+      1061,
+      1063,
+      1069,
+      1087,
+      1091,
+      1093,
+      1097,
+      1103,
+      1109,
+      1117,
+      1123
+    ]
+  },
+  "actions": [
+    {
+      "id": "stop",
+      "drive": 0,
+      "fan": 1
+    },
+    {
+      "id": "eco",
+      "drive": 0.4,
+      "fan": 0.45
+    },
+    {
+      "id": "balanced",
+      "drive": 0.7,
+      "fan": 0.65
+    },
+    {
+      "id": "boost",
+      "drive": 1,
+      "fan": 1
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "nominal",
+      "purpose": "Stable production, energy and queue tradeoff",
+      "events": [],
+      "role": "service"
+    },
+    {
+      "id": "load-return",
+      "purpose": "External load change and recovery",
+      "events": [
+        {
+          "at": 140,
+          "duration": 160,
+          "patch": {
+            "load": 1.7
+          },
+          "probeRecovery": true
+        }
+      ],
+      "role": "service"
+    },
+    {
+      "id": "friction-recall",
+      "purpose": "A-B-A-B recall in one continuous run",
+      "events": [
+        {
+          "at": 100,
+          "duration": 120,
+          "patch": {
+            "friction": 0.85
+          },
+          "probeRecovery": true
+        },
+        {
+          "at": 350,
+          "duration": 140,
+          "patch": {
+            "friction": 0.85
+          },
+          "probeRecovery": true
+        }
+      ],
+      "role": "service"
+    },
+    {
+      "id": "cooling-drift",
+      "purpose": "Gradual loss and return of cooling effectiveness",
+      "events": [
+        {
+          "at": 120,
+          "duration": 260,
+          "rampSteps": 150,
+          "patch": {
+            "cooling": 0.2
+          },
+          "probeRecovery": true
+        }
+      ],
+      "role": "service"
+    },
+    {
+      "id": "compound",
+      "purpose": "Overlapping mechanical and cooling failures",
+      "events": [
+        {
+          "at": 100,
+          "duration": 260,
+          "patch": {
+            "friction": 1.1
+          },
+          "probeRecovery": true
+        },
+        {
+          "at": 180,
+          "duration": 230,
+          "patch": {
+            "cooling": 0.3
+          },
+          "probeRecovery": true
+        }
+      ],
+      "role": "stress"
+    },
+    {
+      "id": "missing-temperature",
+      "purpose": "Lost primary sensor during a mechanical disturbance",
+      "events": [
+        {
+          "at": 130,
+          "duration": 230,
+          "patch": {
+            "friction": 0.9
+          },
+          "probeRecovery": true
+        },
+        {
+          "at": 150,
+          "duration": 150,
+          "patch": {
+            "temperatureMissing": 1
+          },
+          "probeRecovery": false
+        }
+      ],
+      "role": "stress"
+    },
+    {
+      "id": "sensor-bias",
+      "purpose": "Temperature under-reporting can conceal real overheating",
+      "events": [
+        {
+          "at": 100,
+          "duration": 300,
+          "patch": {
+            "friction": 1.25,
+            "cooling": 0.6
+          },
+          "probeRecovery": true
+        },
+        {
+          "at": 160,
+          "duration": 200,
+          "patch": {
+            "temperatureBias": -22
+          },
+          "probeRecovery": false
+        }
+      ],
+      "role": "stress"
+    },
+    {
+      "id": "delayed-actuator",
+      "purpose": "Commands have delayed physical effects",
+      "events": [
+        {
+          "at": 110,
+          "duration": 280,
+          "patch": {
+            "delaySteps": 5,
+            "load": 1.5
+          },
+          "probeRecovery": true
+        }
+      ],
+      "role": "service"
+    },
+    {
+      "id": "misleading-vibration",
+      "purpose": "A vibration cue loses its former correlation",
+      "events": [
+        {
+          "at": 90,
+          "duration": 100,
+          "patch": {
+            "friction": 0.8
+          },
+          "probeRecovery": true
+        },
+        {
+          "at": 330,
+          "duration": 160,
+          "patch": {
+            "friction": 0.8,
+            "vibrationBias": -0.2
+          },
+          "probeRecovery": true
+        }
+      ],
+      "role": "service"
+    },
+    {
+      "id": "unobservable-before-change",
+      "purpose": "No advance measurement of an abrupt external disturbance",
+      "events": [
+        {
+          "at": 180,
+          "duration": 160,
+          "patch": {
+            "friction": 1,
+            "cooling": 0.4
+          },
+          "probeRecovery": true
+        }
+      ],
+      "role": "stress"
+    }
+  ],
+  "coverage": {
+    "evidenceLevel": "fixed-families-instrument-check",
+    "seedVariation": [
+      "measurement-noise",
+      "ambient-temperature",
+      "event-timing"
+    ],
+    "heldOutPhenomenonFamilies": false,
+    "generalizationMeasured": false,
+    "industrialCalibration": false
+  }
+}

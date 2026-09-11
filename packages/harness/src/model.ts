@@ -1,3 +1,5 @@
+import type { CueDecision } from "./cue-types.js";
+import type { OperatingAttribution, OperatingBelief } from "./operating-types.js";
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
 
@@ -14,6 +16,8 @@ export interface Intention {
 }
 
 export interface DecisionContext {
+    readonly cues?: CueDecision;
+    readonly operatingContextId?: string;
     readonly key: string;
     readonly state: State;
     readonly intention: Intention;
@@ -78,6 +82,8 @@ export interface OutcomeEvaluation {
 }
 
 export interface Experience {
+    readonly cues?: CueDecision;
+    readonly attribution?: OperatingAttribution;
     readonly id: string;
     readonly decisionId?: string;
     readonly context: DecisionContext;
@@ -156,6 +162,7 @@ export interface OutcomeEvaluator {
 }
 
 export interface DecisionTrace {
+    readonly cues?: CueDecision;
     readonly decisionId: string;
     readonly source: DecisionSource;
     readonly stateBefore: State;
@@ -166,7 +173,10 @@ export interface DecisionTrace {
     readonly result: CapabilityResult;
     readonly stateAfter: State;
     readonly evaluation: OutcomeEvaluation;
-    readonly transitionAfter: TransitionStats;
+    readonly transitionAfter?: TransitionStats;
+    readonly operatingBefore?: OperatingBelief;
+    readonly operatingAfter?: OperatingBelief;
+    readonly attribution?: OperatingAttribution;
     readonly startedAt: number;
     readonly completedAt: number;
 }

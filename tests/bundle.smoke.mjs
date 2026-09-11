@@ -10,7 +10,7 @@ test("browser plugin publishes its API and reuses the host core", async () => {
     const sandbox = { SpikypandaCore: core, SpikypandaHarness: harness };
     runInNewContext(code, sandbox);
     const plugin = sandbox.SpkPluginHarness;
-    assert.equal(plugin.HARNESS_NODES.length, 12);
+    assert.equal(plugin.HARNESS_NODES.length, 16);
     for (const entry of plugin.HARNESS_NODES) assert.ok(new entry.ctor() instanceof core.RuntimeNode);
     for (const entry of plugin.HARNESS_NODES) assert.ok(new entry.ctor() instanceof harness.HarnessNode);
     assert.equal(plugin.PolicyLookupNode, harness.PolicyLookupNode);

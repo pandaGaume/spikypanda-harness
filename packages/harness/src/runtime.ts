@@ -1,3 +1,5 @@
+import type { CueObserver, CueRunMode } from "./cue-types.js";
+import type { OperatingContextTracker } from "./operating-context.js";
 import type { IRuntimeGraph } from "@spiky-panda/core";
 import { AllowAllSafetyGuard, CapabilityRegistry } from "./capability.js";
 import { PolicyMetrics } from "./metrics.js";
@@ -9,6 +11,9 @@ import type { DecisionFrame, HarnessDriver, HarnessGraphExecutor, HarnessRun, No
 export type { DecisionFrame, HarnessDriver, HarnessStage, StageEvent } from "./contracts.js";
 
 export interface AdaptivePolicyRuntimeOptions {
+    readonly operatingContexts?: OperatingContextTracker;
+    readonly cueObserver?: CueObserver;
+    readonly cueMode?: CueRunMode;
     /** Explicit host graph driver. May instead be supplied to each step. */
     readonly driver?: HarnessDriver;
     readonly policy: PolicyGraph;
@@ -82,7 +87,7 @@ export class AdaptivePolicyRuntime implements HarnessGraphExecutor {
         checkAbort(run.signal);
         if (run.session) throw new Error("Decision graph already started");
         const session = new HarnessSession(graph, { ...run, clock: this.clock, onStage: this.options.onStage, onNode,
-            services: { policy: this.options.policy, observer: this.options.observer, fallback: this.options.fallback,
+            services: { cueObserver: this.options.cueObserver, cueMode: this.options.cueMode, operatingContexts: this.options.operatingContexts, policy: this.options.policy, observer: this.options.observer, fallback: this.options.fallback,
                 evaluator: this.options.evaluator, metrics: this.metrics },
             capabilities: this.options.capabilities, guard: this.safetyGuard });
         run.session = session;

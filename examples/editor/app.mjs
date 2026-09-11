@@ -2,19 +2,22 @@ import "reflect-metadata";
 import { RuntimeNode, RuntimeGraph, Channel, Session, Scheduler, isLinkRef, Graph, GraphNode, GraphOLink } from "@spiky-panda/core";
 import { GraphViewer, NodeRegistry, LinkRegistry, EditorRegistry, PORT_COLORS, loadPluginFromUrl } from "@spikypanda/nodeeditor";
 import * as SpikypandaHarness from "../../packages/harness/dist/index.js";
-import { createCounterHarness } from "../counter/harness.mjs";
-import { CounterWorld, createCounterRuntime } from "../counter/world.mjs";
+import { createCounterHarnessV3 as createCounterHarness, createCounterCueMemory, createCounterRuntimeV3 as createCounterRuntime,
+    CounterCueWorld as CounterWorld, upgradeCounterHarnessV3 } from "../counter/perceptive.mjs";
+import { projectCues } from "./cue-model.mjs";
+import { CueView } from "./cue-view.mjs";
 import { projectMemory } from "./memory-model.mjs";
 import { MemoryView } from "./memory-view.mjs";
 import "./style.css";
 
 globalThis.SpikypandaCore = { RuntimeNode, RuntimeGraph, Channel, Session, Scheduler, isLinkRef, Graph, GraphNode, GraphOLink };
 globalThis.SpikypandaHarness = SpikypandaHarness;
-const { PolicyGraph } = SpikypandaHarness;
+
 const registry = new NodeRegistry();
 await loadPluginFromUrl("SpkPluginHarness", "spk.harness", { nodes: registry, links: new LinkRegistry(), editors: new EditorRegistry(),
     url: "./SpkPluginHarness.js", assetUrl: path => new URL(path, location.href).href });
-const { HARNESS_NODES, createGraphDriver, parseHarnessDefinition } = globalThis.SpkPluginHarness;
+const { createGraphDriver, parseHarnessDefinition } = globalThis.SpkPluginHarness;
+const HARNESS_NODES = globalThis.SpkPluginHarness.HARNESS_NODES.filter(n => !["Harness.Policy:lookup", "Harness.Policy:contextual-lookup", "Harness.Learning:record"].includes(n.type));
 for (const entry of HARNESS_NODES) {
     const sample = new entry.ctor();
     if (!(sample instanceof RuntimeNode)) throw new Error("Plugin loaded a different core instance");
@@ -25,9 +28,12 @@ const $ = id => document.getElementById(id);
 const viewer = new GraphViewer($("graph"));
 viewer.setNodeRegistry(registry);
 const memoryView = new MemoryView($("memory-graph"), $("memory-summary"), $("memory-change"), $("memory-history"), $("memory-detail"));
+const cueView = new CueView($("cue-panel"));
 const previousMemories = [];
 let intention = createCounterHarness().intention;
-let policy = new PolicyGraph();
+let cueObserver = createCounterCueMemory();
+let policy = cueObserver.policy;
+let operatingContexts;
 let world;
 let runtime;
 let fallback;
@@ -36,17 +42,18 @@ let running = false;
 let traceNumber = 0;
 const nodeIds = new Map();
 const storageKeys = { harness: "spikypanda.harness.v1", policy: "spikypanda.policy.v1" };
-const editControls = ["step", "episode", "train", "target", "add", "empty", "template", "save", "reload", "import-harness", "import-policy", "export-harness", "export-policy", "clear-memory", "restore-memory"];
+const editControls = ["cue-mode", "step", "episode", "train", "target", "add", "empty", "template", "save", "reload", "import-harness", "import-policy", "export-harness", "export-policy", "clear-memory", "restore-memory"];
 
 function status(message, error = false) { $("status").textContent = message; $("status").classList.toggle("error", error); }
 function rebind() {
-    memoryView.reset();
+    memoryView.reset(); cueView.reset();
     $("memory-phase").textContent = "En attente du prochain tour";
     world = new CounterWorld();
+    world.setCueVisibility($("cue-visibility").value);
     world.target = Number(intention.parameters.target);
-    ({ runtime, fallback } = createCounterRuntime(policy, world, { delayMs: 140, onStage(event) {
+    ({ runtime, fallback, operatingContexts } = createCounterRuntime(cueObserver, world, { cueMode: $("cue-mode").value, delayMs: 140, onStage(event) {
         if (event.status === "start") {
-            const phase = { lookup: "Lecture de la mémoire", reason: "La mémoire ne suffit pas : proposition du raisonneur",
+            const phase = { cues: "Lecture des indices observables avant action", lookup: "Lecture de la mémoire", reason: "La mémoire ne suffit pas : proposition du raisonneur",
                 execute: "Action et observation du résultat", record: "Révision de la mémoire après évaluation" }[event.stage];
             if (phase) $("memory-phase").textContent = phase;
         }
@@ -78,7 +85,7 @@ function addNode(type, x, y, savedId, enabled = true) {
 }
 
 function loadGraph(value) {
-    const def = parseHarnessDefinition(value);
+    const def = upgradeCounterHarnessV3(value);
     const nextIntention = intentionFrom(def);
     // Preflight ports before replacing the visible draft.
     for (const edge of def.edges) {
@@ -132,7 +139,10 @@ function update(trace) {
     $("fallback-count").textContent = fallback.calls;
     $("success-rate").textContent = `${metrics.executedActions ? Math.round(metrics.successCount / metrics.executedActions * 100) : 0} %`;
     const snapshot = policy.snapshot();
-    memoryView.render(projectMemory(policy), trace);
+    const cues = projectCues(cueObserver, world.current(), intention, $("cue-mode").value, operatingContexts);
+    cueView.render(cues, trace);
+    const memory = projectMemory(policy, 12, cues.memoryTracker);
+    memoryView.render(memory, trace);
     $("clear-memory").disabled = running || snapshot.experiences.length === 0;
     $("restore-memory").disabled = running || previousMemories.length === 0;
     const experienceCount = snapshot.experiences.length;
@@ -141,15 +151,17 @@ function update(trace) {
     $("weights").replaceChildren();
     for (const item of snapshot.transitions) {
         const context = snapshot.contexts.find(c => c.key === item.contextKey);
-        const eligible = policy.findCandidateActions(context.state, context.intention).find(c => c.transitionKey === item.key)?.eligible;
+        const transition = memory.transitions.find(t => t.id === "transition:" + item.key);
+        const eligible = transition?.eligible;
+        const applicability = ({ applicable: "Actif", dormant: "En sommeil", uncertain: "À établir", legacy: "V1 non attribué" })[transition?.applicability] ?? "À établir";
         const row = document.createElement("tr");
-        const values = [`${context.state.id} / ${context.intention.parameters?.target ?? "?"}`, item.actionId,
+        const values = [`${context.state.id} / ${context.intention.parameters?.target ?? "?"} · ${transition?.modeLabel ?? "observations"}`, item.actionId,
             `${Math.round(item.stats.confidence * 100)} %`, item.stats.rewardEma.toFixed(2), `${item.stats.effectiveEvidence}/${policy.plasticity.maximumEffectiveEvidence}`,
-            eligible ? "Disponible" : "À réévaluer"];
-        values.forEach((value, index) => { const cell = document.createElement("td"); cell.textContent = value; if (index === 5) cell.className = eligible ? "eligible" : "uncertain"; row.append(cell); });
+            applicability, eligible ? "Disponible" : "Non"];
+        values.forEach((value, index) => { const cell = document.createElement("td"); cell.textContent = value; if (index === 6) cell.className = eligible ? "eligible" : "uncertain"; row.append(cell); });
         $("weights").append(row);
     }
-    if (!snapshot.transitions.length) { const row = $("weights").insertRow(); const cell = row.insertCell(); cell.colSpan = 6; cell.textContent = "Aucune expérience. Rien n'est consolidé."; }
+    if (!snapshot.transitions.length) { const row = $("weights").insertRow(); const cell = row.insertCell(); cell.colSpan = 7; cell.textContent = "Aucune expérience. Rien n'est consolidé."; }
 }
 
 async function step() {
@@ -176,7 +188,10 @@ async function step() {
     while ($("trace").children.length > 30) $("trace").lastChild.remove();
     update(trace);
     $("memory-phase").textContent = "Tour terminé : la prochaine décision relira la mémoire révisée";
-    status(`${trace.source === "policy" ? "Rejeu de la policy" : "Proposition du raisonneur"}. ${trace.evaluation.success ? "Progrès confirmé" : "Échec observé, confiance révisée"}. Confiance : ${Math.round(trace.transitionAfter.confidence * 100)} %.`);
+    const mode = policy.mode(trace.operatingAfter?.modeId);
+    status(`${trace.source === "policy" ? "Rejeu de la policy" : "Proposition du raisonneur"}. ${trace.evaluation.success ? "Progrès observé" : "Échec observé"}. ${trace.transitionAfter
+        ? "Fiabilité dans le fonctionnement attribué : " + Math.round(trace.transitionAfter.confidence * 100) + " %."
+        : "Attribution en attente, expérience conservée."} Hypothèse actuelle : ${trace.operatingAfter?.status === "recognized" ? mode?.label : "incertaine"}.`);
     await new Promise(resolve => setTimeout(resolve, $("slow").checked ? 850 : 60));
 }
 
@@ -206,17 +221,19 @@ async function run(mode) {
 function safely(action) { return async () => { try { await action(); } catch (error) { status(error.message, true); } }; }
 for (const mode of ["step", "episode", "train"]) $(mode).onclick = () => run(mode);
 $("stop").onclick = () => controller?.abort(new Error("Exécution annulée. Aucun résultat incomplet n'a été appris."));
-$("invert").onclick = () => { world.invert(); update(); status("Dynamique inversée. La policy n'a pas été modifiée : les observations suivantes feront foi."); };
+$("invert").onclick = () => { world.invert(); update(); status("Dynamique inversée. La mémoire est inchangée. Le panneau montre ce que les indices permettent de reconnaître avant la prochaine action."); };
+$("cue-mode").onchange = () => { rebind(); status("Mode changé, monde et compteurs réinitialisés. Mémoire conservée."); };
+$("cue-visibility").onchange = () => { world.setCueVisibility($("cue-visibility").value); update(); status("Mesures modifiées. Aucun apprentissage sans action évaluée."); };
 $("fit").onclick = fit;
 $("clear-memory").onclick = () => {
-    previousMemories.push(policy);
-    policy = new PolicyGraph(undefined, policy.plasticity);
+    previousMemories.push(cueObserver);
+    cueObserver = createCounterCueMemory(undefined, policy.plasticity, policy.contextConfig); policy = cueObserver.policy;
     rebind();
     status("Nouvelle mémoire vide, monde remis à zéro en dynamique normale. La mémoire précédente reste récupérable et la sauvegarde du navigateur est inchangée.");
 };
 $("restore-memory").onclick = () => {
     if (!previousMemories.length) return;
-    policy = previousMemories.pop();
+    cueObserver = previousMemories.pop(); policy = cueObserver.policy;
     rebind();
     status("Mémoire précédente retrouvée. Monde remis à zéro en dynamique normale. La sauvegarde du navigateur est inchangée.");
 };
@@ -226,10 +243,10 @@ $("target").onchange = safely(() => {
 });
 for (const entry of HARNESS_NODES) { const option = document.createElement("option"); option.value = entry.type; option.textContent = entry.label; $("node-type").append(option); }
 $("add").onclick = () => { const point = viewer.camera.screenToWorld(60, 60); addNode($("node-type").value, point.x, point.y); };
-$("empty").onclick = () => { if (confirm("Vider le graphe visible ? La policy sera conservée.")) { viewer.clear(); nodeIds.clear(); status("Graphe vide. Ajoutez les 12 étapes et reliez leurs ports."); } };
+$("empty").onclick = () => { if (confirm("Vider le graphe visible ? La policy sera conservée.")) { viewer.clear(); nodeIds.clear(); status("Graphe vide. Ajoutez les 13 étapes et reliez leurs ports."); } };
 $("template").onclick = () => { if (confirm("Remplacer le graphe visible par le modèle Counter ? La policy sera conservée.")) { loadGraph(createCounterHarness()); rebind(); status("Modèle Counter restauré. Policy conservée."); } };
 $("save").onclick = safely(() => {
-    const graphJson = JSON.stringify(graphSnapshot()); const policyJson = JSON.stringify(policy.snapshot());
+    const graphJson = JSON.stringify(graphSnapshot()); const policyJson = JSON.stringify(cueObserver.snapshot());
     const previous = localStorage.getItem(storageKeys.harness);
     localStorage.setItem(storageKeys.harness, graphJson);
     try { localStorage.setItem(storageKeys.policy, policyJson); }
@@ -240,9 +257,9 @@ function reload() {
     const graph = JSON.parse(localStorage.getItem(storageKeys.harness) ?? "null");
     const snapshot = JSON.parse(localStorage.getItem(storageKeys.policy) ?? "null");
     if (!graph || !snapshot) throw new Error("Aucune paire de sauvegardes disponible");
-    const restored = PolicyGraph.fromSnapshot(snapshot);
-    loadGraph(graph); policy = restored; rebind();
-    status("Harnais et policy rechargés. Nouveau runtime, monde remis à 0 et dynamique normale. La mémoire reste plastique.");
+    const restored = createCounterCueMemory(snapshot);
+    loadGraph(graph); cueObserver = restored; policy = cueObserver.policy; rebind();
+    status("Harnais et policy rechargés. Nouveau runtime, monde remis à 0 et dynamique normale. L'observateur recalcule ses indices ; la fiabilité conditionnelle est conservée.");
 }
 $("reload").onclick = safely(reload);
 function download(name, value) {
@@ -250,12 +267,12 @@ function download(name, value) {
     const link = document.createElement("a"); link.href = url; link.download = name; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 $("export-harness").onclick = safely(() => download("counter.harness.json", graphSnapshot()));
-$("export-policy").onclick = safely(() => download("counter.policy.json", policy.snapshot()));
+$("export-policy").onclick = safely(() => download("counter.policy.json", cueObserver.snapshot()));
 for (const kind of ["harness", "policy"]) $("import-" + kind).onchange = safely(async () => {
     const file = $("import-" + kind).files[0]; if (!file) return;
     if (file.size > 10_000_000) throw new Error("Document trop volumineux (limite : 10 Mo)");
     const value = JSON.parse(await file.text());
-    if (kind === "harness") loadGraph(value); else policy = PolicyGraph.fromSnapshot(value);
+    if (kind === "harness") loadGraph(value); else { cueObserver = createCounterCueMemory(value); policy = cueObserver.policy; }
     rebind(); status(`${kind === "harness" ? "Harnais" : "Policy"} importé. Services locaux reconnectés, monde réinitialisé.`);
     $("import-" + kind).value = "";
 });
